@@ -1,0 +1,54 @@
+{% extends 'bootstrap3/bootstrap3.html' %}
+{% load bootstrap3 %}
+
+{% bootstrap_javascript jquery=True%}
+{# Display django.contrib.messages as Bootstrap alerts #}
+{% bootstrap_messages %}
+
+{% block bootstrap3_content %}
+
+<div class="row-fluid">
+  <div class="col-lg-4">
+    <form role="form-horizontal" class="form" action="{% url 'xmatch' %}" method="post">
+      <legend>Inputs</legend>
+      {% csrf_token %}
+      {% bootstrap_form form layout='horizontal' %}
+      {% buttons %}
+      <button type="submit" class="btn btn-primary">
+        {% bootstrap_icon "star" %} Submit
+      </button>
+      {% endbuttons %}
+    </form>
+  </div>
+  <div class="col-lg-8">
+    <legend>Output</legend>
+    {% if result %}
+    <div class="panel panel-default">
+        <div class="panel-heading">SZDB</div>
+        {% if result.SZDB_ID > 0 %}
+            <h2>YEAH !!!</h2>
+            <table class="table table-hover">
+            <tr><th>SZDB_RA</th><th>SZDB_DEC</th></td>
+                {% for item in result %}
+                    <tr><td>{{ item.SZDB_RA }}</td><td>{{ item.SZDB_DEC }}</td> </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <h2>bouuuuh</h2>
+        {% endif %}
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading">PXCC</div>
+        {% if result.PXCC_ID > 0 %}
+        <h2>OH YEAH !!!</h2>
+	{% else %}
+	<h2>sniffff</h2>
+        {% endif %}
+    </div>
+    {% else %}
+    <em> No result yet </em>
+    {% endif %}
+  </div>
+  
+</div>
+{% endblock %}
