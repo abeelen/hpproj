@@ -26,12 +26,29 @@
     <div class="panel panel-default">
         <div class="panel-heading">SZDB</div>
         {% if result.SZDB_ID > 0 %}
-            <h2>YEAH !!!</h2>
             <table class="table table-hover">
-            <tr><th>SZDB_RA</th><th>SZDB_DEC</th></td>
-                {% for item in result %}
-                    <tr><td>{{ item.SZDB_RA }}</td><td>{{ item.SZDB_DEC }}</td> </tr>
-                {% endfor %}
+            <tr>
+	      <th>ID</th>
+	      <th>NAME</th>
+	      <th>RA</th>
+	      <th>DEC</th>
+	      <th>z</th>
+ 	      <th>z type</th>
+	      <th>ALT_NAME</th>
+	      <th>dist</th>
+           </td>
+           {% for item in result %}
+              <tr>
+		<td>{{ item.SZDB_ID }}</td>
+		<td>{{ item.SZDB_NAME }}</td>
+		<td>{{ item.SZDB_RA }}</td>
+		<td>{{ item.SZDB_DEC }}</td>
+		<td>{{ item.SZDB_REDSHIFT }}</td> 
+		<td>{{ item.SZDB_REDSHIFT_TYPE }}</td> 
+		<td>{{ item.SZDB_ALT_NAME }}</td>
+		<td>{{ item.SZDB_SEP }} </td>
+	      </tr>
+	   {% endfor %}
             </table>
         {% else %}
             <h2>bouuuuh</h2>
@@ -40,11 +57,51 @@
     <div class="panel panel-default">
         <div class="panel-heading">PXCC</div>
         {% if result.PXCC_ID > 0 %}
-        <h2>OH YEAH !!!</h2>
+	    <table class="table table-hover">
+            <tr>
+	      <th>ID</th>
+	      <th>NAME</th>
+	      <th>RA</th>
+	      <th>DEC</th>
+	      <th>z</th>
+	      <th>M500</th>
+	      <th>ALT_NAME</th>
+	      <th>dist</th>
+            </td>
+                {% for item in result %}
+                    <tr>
+		      <td>{{ item.PXCC_ID }}</td>
+		      <td>{{ item.PXCC_NAME }}</td>
+		      <td>{{ item.PXCC_RAJ2000 }}</td>
+		      <td>{{ item.PXCC_DEJ2000 }}</td> 
+		      <td>{{ item.PXCC_Z }}</td> 
+		      <td>{{ item.PXCC_M_500 }}</td> 
+		      <td>{{ item.PXCC_NAME_ALT}}</td>
+		      <td>{{ item.PXCC_SEP }}</td>
+		    </tr>
+                {% endfor %}
+            </table>
 	{% else %}
 	<h2>sniffff</h2>
         {% endif %}
     </div>
+    <div class="panel panel-default">
+        <div class="panel-heading">Redmapper</div>
+        {% if result.RDM_ID > 0 %}
+        <h2>OH YEAH !!!</h2>
+	{% else %}
+	N/A
+        {% endif %}
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading">Wen</div>
+        {% if result.WEN_ID > 0 %}
+        <h2>OH YEAH !!!</h2>
+	{% else %}
+	N/A
+        {% endif %}
+    </div>
+
     {% else %}
     <em> No result yet </em>
     {% endif %}
