@@ -15,6 +15,9 @@ import cStringIO
  
 import cross_match
 
+import os
+from WebServices.settings import BASE_DIR
+
 def build_WCS(lon, lat, pixsize=0.01, npix=512, coordsys='ECLIPTIC', proj_type='TAN'):
     """Construct a WCS object for a 2D map
     Parameters
@@ -123,7 +126,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
 
     doxmap = True    
 
-    filemap = '/DATA/PLANCK2/MILCA_TSZ_2048_spectral_spacial_local_10arcmin.fits'
+    filemap = os.path.join(BASE_DIR,'xmatch/data/MILCA_TSZ_2048_spectral_spacial_local_10arcmin.fits')
 
  
     ymap    = hp.read_map(filemap, verbose=False)
@@ -159,8 +162,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
 
 
 
-    
-    filemapx = '/DATA/ROSAT/PATCHES/map_rosat_70-200_2048.fits'
+    filemapx = os.path.join(BASE_DIR,'xmatch/data/map_rosat_70-200_2048.fits')
     xmap    = hp.read_map(filemapx, verbose=False)
     xpatch  = hp_project(xmap, w, n_pixels,np.str(coordf))
     
