@@ -12,7 +12,7 @@
     <form role="form-horizontal" class="form" action="{% url 'xmatch' %}" method="post">
       <legend>Inputs</legend>
       {% csrf_token %}
-      {% bootstrap_form form layout='horizontal' %}
+      {% bootstrap_form form layout='vertical' %}
       {% buttons %}
       <button type="submit" class="btn btn-primary">
         {% bootstrap_icon "star" %} Submit
@@ -22,10 +22,53 @@
   </div>
   <div class="col-lg-8">
     <legend>Output</legend>
-    {% if result %}
+
+    {% if maps %}
+    <div class="col-lg-6">
+      {% if maps.mapy %}
+      <div class="panel panel-default">
+	<div class="panel-heading">Y-Map</div>
+	<img class="img-responsive" src="data:image/png;base64,{{maps.mapy}}" alt="Ymap" />
+      </div>
+      {% endif %}
+    </div>
+    <div class="col-lg-6">
+      {% if maps.mapx %}
+      <div class="panel panel-default">
+	<div class="panel-heading">X-Map</div>
+	<img class="img-responsive" src="data:image/png;base64,{{maps.mapx}}" alt="Xmap"/>
+      </div>
+      {% endif %}
+    </div>
+
+
+
+    {% else %}
+    <em> No maps yet </em>
+    {% endif %}
+
+ 
+  
+    <div class="col-lg-12">
+
+
+    {% if xmatch %}
+
     <div class="panel panel-default">
-        <div class="panel-heading">SZDB</div>
-        {% if result.SZDB_ID > 0 %}
+        <div class="panel-heading">
+	<h4 class="panel-title">
+	  <a data-toggle="collapse" href="#XMATCH"> XMATCH <span class="badge pull-right"> {{xmatch|length}} </span> </a></h4> 
+	</div>
+	<div id="XMATCH" class="panel-collapse collapse"> 
+
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+	<h4 class="panel-title">
+	  <a data-toggle="collapse" href="#SZDB"> SZDB <span class="badge pull-right"> {{ xmatch.SZDB_ID }} </span> </a></h4> 
+	</div>
+	<div id="SZDB" class="panel-collapse collapse"> 
+        {% if xmatch.SZDB_ID > 0 %}
             <table class="table table-hover">
             <tr>
 	      <th>ID</th>
@@ -37,7 +80,7 @@
 	      <th>ALT_NAME</th>
 	      <th>dist</th>
            </td>
-           {% for item in result %}
+           {% for item in xmatch %}
               <tr>
 		<td>{{ item.SZDB_ID }}</td>
 		<td>{{ item.SZDB_NAME }}</td>
@@ -52,11 +95,12 @@
             </table>
         {% else %}
             <h2>bouuuuh</h2>
-        {% endif %}
+        {% endif %} 
+        </div>
     </div>
     <div class="panel panel-default">
         <div class="panel-heading">PXCC</div>
-        {% if result.PXCC_ID > 0 %}
+        {% if xmatch.PXCC_ID > 0 %}
 	    <table class="table table-hover">
             <tr>
 	      <th>ID</th>
@@ -68,7 +112,7 @@
 	      <th>ALT_NAME</th>
 	      <th>dist</th>
             </td>
-                {% for item in result %}
+                {% for item in xmatch %}
                     <tr>
 		      <td>{{ item.PXCC_ID }}</td>
 		      <td>{{ item.PXCC_NAME }}</td>
@@ -87,7 +131,7 @@
     </div>
     <div class="panel panel-default">
         <div class="panel-heading">Redmapper</div>
-        {% if result.RDM_ID > 0 %}
+        {% if xmatch.RDM_ID > 0 %}
         <h2>OH YEAH !!!</h2>
 	{% else %}
 	N/A
@@ -95,17 +139,29 @@
     </div>
     <div class="panel panel-default">
         <div class="panel-heading">Wen</div>
-        {% if result.WEN_ID > 0 %}
+        {% if xmatch.WEN_ID > 0 %}
         <h2>OH YEAH !!!</h2>
 	{% else %}
 	N/A
         {% endif %}
     </div>
+    
+</div>
+</div>
 
     {% else %}
     <em> No result yet </em>
     {% endif %}
-  </div>
+
+
+
+    
+
+
+</div>
+</div>
+
+
   
 </div>
 {% endblock %}
