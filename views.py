@@ -27,7 +27,7 @@ def index(request):
             lon = form.cleaned_data.get('lon')
             lat = form.cleaned_data.get('lat')
             coordframe = form.cleaned_data.get('coordframe')
-            result_xmatch = cross_match.cross_match(cross_match_ini, glonglat=[lon,lat],coordframe=coordframe)
+            result_xmatch = cross_match.cross_match(cross_match_ini, lonlat=[lon,lat],coordframe=coordframe)
 
             print result_xmatch
 
