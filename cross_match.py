@@ -32,7 +32,6 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
         return
 
     #reads the ini file
-
     conf = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
     conf.read(file_input)
 

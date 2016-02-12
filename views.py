@@ -1,9 +1,12 @@
 from django.shortcuts import render
 from django import forms
 
+import os
+from WebServices.settings import BASE_DIR
+
 import cross_match
 
-cross_match_ini="/home/abeelen/Python/WebService/WebServices/xmatch/data/cross_match_MD.ini"
+cross_match_ini=os.path.join(BASE_DIR, "xmatch/data/cross_match_MD.ini")
 
 # Create your views here.
 
