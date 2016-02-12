@@ -129,7 +129,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     filemap = os.path.join(BASE_DIR,'xmatch/data/MILCA_TSZ_2048_spectral_spacial_local_10arcmin.fits')
 
  
-    ymap    = hp.read_map(filemap, verbose=False)
+    ymap    = hp.read_map(filemap, verbose=False, dtype=np.float32, memmap=True)
 
     w       = build_WCS(glon,glat, pixsize=pixel_size/60., npix=n_pixels, coordsys=np.str(coordf), proj_type='TAN')
 
@@ -163,7 +163,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
 
 
     filemapx = os.path.join(BASE_DIR,'xmatch/data/map_rosat_70-200_2048.fits')
-    xmap    = hp.read_map(filemapx, verbose=False)
+    xmap    = hp.read_map(filemapx, verbose=False, dtype=np.float32, memmap=True)
     xpatch  = hp_project(xmap, w, n_pixels,np.str(coordf))
     
     
