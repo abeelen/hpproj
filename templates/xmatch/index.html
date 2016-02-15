@@ -91,7 +91,16 @@
            </td>
            {% for item in xmatch.xmatch %}
               <tr>
-		<td>{{ item.SZDB_ID }}</td>
+		
+		{% with y=item.SZDB_ID|stringformat:"s" %}
+		{% with  template="http://szcluster-db.ias.u-psud.fr/sitools/upload/Slide/html/index_"|add:y|add:".html" %}
+
+		<td> <a href="#" onClick="MyWindow=window.open('{{ template }}','MyWindow','toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no,width=1100,height=420'); return false;"> {{ item.SZDB_ID }} </a> </td>
+
+
+		{% endwith %}
+		{% endwith %}
+
 		<td>{{ item.SZDB_NAME }}</td>
 		<td>{{ item.SZDB_RA }}</td>
 		<td>{{ item.SZDB_DEC }}</td>

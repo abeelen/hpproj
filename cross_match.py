@@ -91,7 +91,7 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
                     x_sep       = temp_sep[wheregood]
                 elif np.sum(wheregood)==1:
                     x_id_in_cat = [0]
-                    x_id        = [temp_id*1]
+                    x_id        = temp_id
                     x_coord     = coord_cc[x_id]
                     x_sep       = temp_sep
                     cnt=cnt+1
@@ -105,7 +105,7 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
 
                 # adding columns related to the crossmatch
                 ccm_tab.add_column(Table.Column(name='INDEX', data=x_id_in_cat))
-                ccm_tab.add_column(Table.Column(name=cat.upper()+'_ID', data=x_id))
+                ccm_tab.add_column(Table.Column(name=cat.upper()+'_ID', data=x_id+1))
                 ccm_tab.add_column(Table.Column(name=cat.upper()+'_SEP', data=x_sep.arcmin))
 
 
