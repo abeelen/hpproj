@@ -14,7 +14,7 @@
 
     <form role="form-horizontal" class="form" action="{% url 'xmatch' %}" method="post">
       <legend>Inputs</legend>
-Enter your coordinates and parameters to see the Planck y-map and Rosat x-map, and check for corresponding clusters.<p>
+
 
       {% csrf_token %}
       {% bootstrap_form form layout='vertical' %}
@@ -24,12 +24,12 @@ Enter your coordinates and parameters to see the Planck y-map and Rosat x-map, a
       </button>
       {% endbuttons %}
     </form>
-The cross match of the position is done with SZDB, MCXC, RedMapper and Wen catalogue at 5arcmin distance. The fluxes are computed as aperture photometry in 3arcmin radius.
+The cross match of the position is done at 5arcmin distance. The fluxes are computed as aperture photometry in 3arcmin radius.<p>
 Provided by IDOC/IAS/OSUPS.
   </div>
 
   <div class="col-lg-8">
-<p>
+
 
     <legend>Output</legend>
 
@@ -62,7 +62,7 @@ Provided by IDOC/IAS/OSUPS.
 
 
     {% else %}
-    <em> No maps yet </em><p>
+    <em> No y-map nor Xray map yet </em><p>
     {% endif %}
 
  
@@ -236,7 +236,7 @@ Provided by IDOC/IAS/OSUPS.
 </div>
 
     {% else %}
-    <em> No x-match yet </em>
+    <em> No x-match with SZDB, MCXC, Redmapper, Wen yet </em>
     {% endif %}
 
 </div>
@@ -250,7 +250,7 @@ Provided by IDOC/IAS/OSUPS.
 
   <div class="panel panel-default">
         <div class="panel-heading">
-	<div class="panel-title"> <h4>Other wavelenghts</h4></div>
+	<div class="panel-title"> <h4>Other wavelenghts <h5>(from SZcluster-db)</h5></h4> </div>
  </div>
     <br>
     <div id="myCarousel" class="carousel slide" data-ride="carousel" style="width: 350px; margin: 0 auto">
