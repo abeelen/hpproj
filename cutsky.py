@@ -141,7 +141,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     wcs_proj=WCS(w.to_header())
     ax1_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
     ax1_wcs.imshow(ypatch, interpolation='none', origin='lower' )
-    levels=[ypatch.max()/4.,ypatch.max()/3., ypatch.max()/2.]
+    levels=[ypatch.max()/4., ypatch.max()/2.]
     ax1_wcs.contour(ypatch,levels=levels,colors="white")
     ax1_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
     if np.str(coordf)=="ECLIPTIC":
@@ -160,7 +160,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     print('map y ok')
     #plt.savefig('outymap.png',bbox_inches='tight')
     outputymap = cStringIO.StringIO()
-    plt.savefig(outputymap,bbox_inches='tight', format='png')
+    plt.savefig(outputymap,bbox_inches='tight', format='png',dpi=75)
 
     del(ymap)
 
@@ -188,7 +188,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     print('map x ok')           
         #plt.savefig('outxmap.png',bbox_inches='tight')
     outputxmap = cStringIO.StringIO()
-    plt.savefig(outputxmap,bbox_inches='tight', format='png')
+    plt.savefig(outputxmap,bbox_inches='tight', format='png',dpi=75)
     del(xmap)
 
     ## fig=plt.figure()
@@ -223,7 +223,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     yphot = aperture_photometry(ypatch-np.median(ypatch), apertures)
     xphot = aperture_photometry(xpatch-np.median(xpatch), apertures)
 
-    print('phot ok')
+    print('phot ok', xphot)
 
     
     return {'mapy':outputymap.getvalue().encode("base64").strip(),
