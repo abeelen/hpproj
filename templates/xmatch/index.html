@@ -9,8 +9,13 @@
 
 <div class="row-fluid">
   <div class="col-lg-4">
+
+    
+
     <form role="form-horizontal" class="form" action="{% url 'xmatch' %}" method="post">
       <legend>Inputs</legend>
+Enter your coordinates and parameters to see the Planck y-map and Rosat x-map, and check for corresponding clusters.<p>
+
       {% csrf_token %}
       {% bootstrap_form form layout='vertical' %}
       {% buttons %}
@@ -19,18 +24,23 @@
       </button>
       {% endbuttons %}
     </form>
+The cross match of the position is done with SZDB, MCXC, RedMapper and Wen catalogue at 5arcmin distance. The fluxes are computed as aperture photometry in 3arcmin radius.
+Provided by IDOC/IAS/OSUPS.
   </div>
+
   <div class="col-lg-8">
+<p>
+
     <legend>Output</legend>
 
     {% if maps %}
     <div class="col-lg-6">
       {% if maps.mapy %}
       <div class="panel panel-default">
-	<div class="panel-heading">Y-Map</div>
+	<div class="panel-heading"><h4> Planck y-Map</h4></div>
 	<img class="img-responsive" src="data:image/png;base64,{{maps.mapy}}" alt="Ymap" />
 	{% for val, xpix, ypix  in maps.yphot %}
-	<center><h4> y flux = {{ val|floatformat:"6" }} arcmin<SUP>2</SUP></h4></center>
+	<center><h4> Aperture y flux = {{ val|floatformat:"6" }} arcmin<SUP>2</SUP></h4></center>
 	{% endfor %}
       </div>
       {% endif %}
@@ -38,12 +48,12 @@
     <div class="col-lg-6">
       {% if maps.mapx %}
       <div class="panel panel-default">
-	<div class="panel-heading">X-Map</div>
+	<div class="panel-heading"><h4>Rosat X-Map</h4></div>
 	<img class="img-responsive" src="data:image/png;base64,{{maps.mapx}}" alt="Xmap"/>
 	
 
 	{% for val, xpix, ypix  in maps.xphot %}
-	<center><h4> x flux = {{ val|floatformat:"6"}}  cnt/s<SUP></SUP></h4></center>
+	<center><h4> Aperture x flux = {{ val|floatformat:"6"}}  cnt/s<SUP></SUP></h4></center>
 	{% endfor %}
       </div>
       {% endif %}
@@ -220,14 +230,8 @@
 	{% else %}
 	<h4>None</h4>
         {% endif %}
-        </div>
-        </div>
-
-
-
-
-
-    
+</div>
+</div>
 </div>
 </div>
 
@@ -235,15 +239,62 @@
     <em> No x-match yet </em>
     {% endif %}
 
+</div>
 
 
+
+{% if xmatch.xmatch.SZDB_ID > 0 %}
+      
+
+<div class="col-lg-6">     
+
+  <div class="panel panel-default">
+        <div class="panel-heading">
+	<div class="panel-title"> <h4>Other wavelenghts</h4></div>
+ </div>
+    <br>
+    <div id="myCarousel" class="carousel slide" data-ride="carousel" style="width: 350px; margin: 0 auto">
+      <!-- Indicators -->
+      <ol class="carousel-indicators">
+	<li data-target="#myCarousel" data-slide-to="0" class="active"></li>
+	<li data-target="#myCarousel" data-slide-to="1"></li>
+	<li data-target="#myCarousel" data-slide-to="2"></li>
+      </ol>
+
+    <!-- Wrapper for slides -->
+    <div class="carousel-inner" role="listbox">
+      <div class="item active">
+        <img src="http://szcluster-db.ias.u-psud.fr/sitools/upload/Slide/images/SZ_1825_SZ_SDSS.png" alt="SDSS" width="350" height="350">
+      </div>
+
+      <div class="item">
+        <img src="http://szcluster-db.ias.u-psud.fr/sitools/upload/Slide/images/SZ_1825_SZ_W1.png" alt="W1" width="350" height="350">
+      </div>
     
+      <div class="item">
+        <img src="http://szcluster-db.ias.u-psud.fr/sitools/upload/Slide/images/SZ_1825_SZ_FoF.png" alt="Wise" width="350" height="350">
+      </div>
 
+    </div>
 
+    <!-- Left and right controls -->
+    <a class="left carousel-control" href="#myCarousel" role="button" data-slide="next">
+      <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+      <span class="sr-only">Previous</span>
+    </a>
+    <a class="right carousel-control" href="#myCarousel" role="button" data-slide="next">
+      <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+      <span class="sr-only">Next</span>
+    </a>
+    </div>
+  </div>
 </div>
 </div>
 
+</div>
 
-  
+
+  {% endif %}
+</div>
 </div>
 {% endblock %}
