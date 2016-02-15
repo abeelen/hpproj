@@ -30,7 +30,7 @@
 	<div class="panel-heading">Y-Map</div>
 	<img class="img-responsive" src="data:image/png;base64,{{maps.mapy}}" alt="Ymap" />
 	{% for val, xpix, ypix  in maps.yphot %}
-	<center><h4> y flux = {{ val }} arcmin<SUP>2</SUP></h4></center>
+	<center><h4> y flux = {{ val|floatformat:"6" }} arcmin<SUP>2</SUP></h4></center>
 	{% endfor %}
       </div>
       {% endif %}
@@ -40,8 +40,10 @@
       <div class="panel panel-default">
 	<div class="panel-heading">X-Map</div>
 	<img class="img-responsive" src="data:image/png;base64,{{maps.mapx}}" alt="Xmap"/>
+	
+
 	{% for val, xpix, ypix  in maps.xphot %}
-	<center><h4> x flux = {{ val }} ....<SUP></SUP></h4></center>
+	<center><h4> x flux = {{ val|floatformat:"6"}}  cnt/s<SUP></SUP></h4></center>
 	{% endfor %}
       </div>
       {% endif %}
