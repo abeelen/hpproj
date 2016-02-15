@@ -140,7 +140,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     fig=plt.figure()
     wcs_proj=WCS(w.to_header())
     ax1_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-    ax1_wcs.imshow(ypatch)
+    ax1_wcs.imshow(ypatch, interpolation='none', origin='lower' )
     levels=[ypatch.max()/4.,ypatch.max()/3., ypatch.max()/2.]
     ax1_wcs.contour(ypatch,levels=levels,colors="white")
     ax1_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
@@ -156,6 +156,8 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
         ax1_wcs.coords['glon'].set_axislabel(r'$l$')
         ax1_wcs.coords['glat'].set_axislabel(r'$b$')
 
+
+    print('map y ok')
     #plt.savefig('outymap.png',bbox_inches='tight')
     outputymap = cStringIO.StringIO()
     plt.savefig(outputymap,bbox_inches='tight', format='png')
@@ -170,7 +172,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     fig=plt.figure()
     wcs_proj=WCS(w.to_header())
     ax2_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-    ax2_wcs.imshow(xpatch)
+    ax2_wcs.imshow(xpatch, interpolation='none', origin='lower')
     ax2_wcs.contour(ypatch,levels=levels, transform=ax2_wcs.get_transform(wcs_proj),colors="white")
     ax2_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
     if np.str(coordf)=="ECLIPTIC":
@@ -183,30 +185,49 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
         ax2_wcs.coords['glat'].set_ticks(color='red')
         ax2_wcs.coords['glon'].set_axislabel(r'$l$')
         ax2_wcs.coords['glat'].set_axislabel(r'$b$')
-            
+    print('map x ok')           
         #plt.savefig('outxmap.png',bbox_inches='tight')
     outputxmap = cStringIO.StringIO()
     plt.savefig(outputxmap,bbox_inches='tight', format='png')
 
 
-    fig=plt.figure()
-    ax3_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-    ax3_wcs.contour(ypatch,levels=levels, transform=ax3_wcs.get_transform(wcs_proj),colors="red")
-    ax3_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
-    if np.str(coordf)=="ECLIPTIC":
-        ax3_wcs.coords['ra'].set_ticks(color='white')
-        ax3_wcs.coords['dec'].set_ticks(color='white')
-        ax3_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
-        ax3_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-    if np.str(coordf)=="GALACTIC":
-        ax3_wcs.coords['glon'].set_ticks(color='red')
-        ax3_wcs.coords['glat'].set_ticks(color='red')
-        ax3_wcs.coords['glon'].set_axislabel(r'$l$')
-        ax3_wcs.coords['glat'].set_axislabel(r'$b$')
+    ## fig=plt.figure()
+    ## ax3_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
+    ## ax3_wcs.contour(ypatch,levels=levels, transform=ax3_wcs.get_transform(wcs_proj),colors="red")
+    ## ax3_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
+    ## if np.str(coordf)=="ECLIPTIC":
+    ##     ax3_wcs.coords['ra'].set_ticks(color='white')
+    ##     ax3_wcs.coords['dec'].set_ticks(color='white')
+    ##     ax3_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
+    ##     ax3_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
+    ## if np.str(coordf)=="GALACTIC":
+    ##     ax3_wcs.coords['glon'].set_ticks(color='red')
+    ##     ax3_wcs.coords['glat'].set_ticks(color='red')
+    ##     ax3_wcs.coords['glon'].set_axislabel(r'$l$')
+    ##     ax3_wcs.coords['glat'].set_axislabel(r'$b$')
   
-    outputcmap = cStringIO.StringIO()
-    plt.savefig(outputcmap,bbox_inches='tight', format='png')
+ #   outputcmap = cStringIO.StringIO()
+ #   plt.savefig(outputcmap,bbox_inches='tight', format='png')
 
+
+
+
+########################################################### APERTURE
+
+
+    print('map ok')
+
+
+    positions = [(n_pixels/2., n_pixels/2.)]
+    apertures = CircularAperture(positions, r=3.0/pixel_size)
+    yphot = aperture_photometry(ypatch-np.median(ypatch), apertures)
+    xphot = aperture_photometry(xpatch-np.median(xpatch), apertures)
+
+    print('phot ok')
+
+    
     return {'mapy':outputymap.getvalue().encode("base64").strip(),
             'mapx':outputxmap.getvalue().encode("base64").strip(),
-            'mapc':outputcmap.getvalue().encode("base64").strip()}
+            'mapc':outputxmap.getvalue().encode("base64").strip(),
+            'xphot':xphot,
+            'yphot':yphot,}

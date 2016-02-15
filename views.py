@@ -35,7 +35,8 @@ def index(request):
             pixel_size =form.cleaned_data.get('pixel_size')
             result_xmatch = cross_match.cross_match(cross_match_ini, lonlat=[lon,lat],coordframe=coordframe)
             result_maps = cutsky.cut_sky( lonlat=[lon,lat],patch=[pixel_number,pixel_size],coordframe=coordframe)
-
+            print('part 1 ok')
+            
 
             
 

@@ -29,6 +29,9 @@
       <div class="panel panel-default">
 	<div class="panel-heading">Y-Map</div>
 	<img class="img-responsive" src="data:image/png;base64,{{maps.mapy}}" alt="Ymap" />
+	{% for val, xpix, ypix  in maps.yphot %}
+	<center><h4> y flux = {{ val }} arcmin<SUP>2</SUP></h4></center>
+	{% endfor %}
       </div>
       {% endif %}
     </div>
@@ -37,6 +40,9 @@
       <div class="panel panel-default">
 	<div class="panel-heading">X-Map</div>
 	<img class="img-responsive" src="data:image/png;base64,{{maps.mapx}}" alt="Xmap"/>
+	{% for val, xpix, ypix  in maps.xphot %}
+	<center><h4> x flux = {{ val }} ....<SUP></SUP></h4></center>
+	{% endfor %}
       </div>
       {% endif %}
     </div>
@@ -44,7 +50,7 @@
 
 
     {% else %}
-    <em> No maps yet </em>
+    <em> No maps yet </em><p>
     {% endif %}
 
  
@@ -57,7 +63,7 @@
     <div class="panel panel-default">
         <div class="panel-heading">
 	<h4 class="panel-title">
-	  <a data-toggle="collapse" href="#XMATCH"> XMATCH <span class="badge pull-right"> {{xmatch|length}} </span> </a></h4> 
+	  <a data-toggle="collapse" href="#XMATCH"> XMATCH <span class="badge pull-right"> {{ xmatch.nbmatch.global }} </span> </a></h4> 
 	</div>
 	<div id="XMATCH" class="panel-collapse collapse"> 
 
@@ -65,10 +71,11 @@
     <div class="panel panel-default">
         <div class="panel-heading">
 	<h4 class="panel-title">
-	  <a data-toggle="collapse" href="#SZDB"> SZDB <span class="badge pull-right"> {{ xmatch.SZDB_ID }} </span> </a></h4> 
+	   <a data-toggle="collapse" href="#SZDB"> SZDB <span class="badge pull-right"> {{ xmatch.nbmatch.szdb }} </span> </a></h4> 
+	  
 	</div>
 	<div id="SZDB" class="panel-collapse collapse"> 
-        {% if xmatch.SZDB_ID > 0 %}
+        {% if xmatch.xmatch.SZDB_ID > 0 %}
             <table class="table table-hover">
             <tr>
 	      <th>ID</th>
@@ -80,7 +87,7 @@
 	      <th>ALT_NAME</th>
 	      <th>dist</th>
            </td>
-           {% for item in xmatch %}
+           {% for item in xmatch.xmatch %}
               <tr>
 		<td>{{ item.SZDB_ID }}</td>
 		<td>{{ item.SZDB_NAME }}</td>
@@ -94,13 +101,17 @@
 	   {% endfor %}
             </table>
         {% else %}
-            <h2>bouuuuh</h2>
+            <h4>None</h4>
         {% endif %} 
         </div>
     </div>
     <div class="panel panel-default">
-        <div class="panel-heading">PXCC</div>
-        {% if xmatch.PXCC_ID > 0 %}
+        <div class="panel-heading">
+	<h4 class="panel-title">
+	  <a data-toggle="collapse" href="#PXCC"> PXCC <span class="badge pull-right"> {{ xmatch.nbmatch.pxcc }} </span> </a></h4> 
+	</div>
+	<div id="PXCC" class="panel-collapse collapse">
+        {% if xmatch.xmatch.PXCC_ID > 0 %}
 	    <table class="table table-hover">
             <tr>
 	      <th>ID</th>
@@ -112,7 +123,7 @@
 	      <th>ALT_NAME</th>
 	      <th>dist</th>
             </td>
-                {% for item in xmatch %}
+                {% for item in xmatch.xmatch %}
                     <tr>
 		      <td>{{ item.PXCC_ID }}</td>
 		      <td>{{ item.PXCC_NAME }}</td>
@@ -126,31 +137,91 @@
                 {% endfor %}
             </table>
 	{% else %}
-	<h2>sniffff</h2>
+	<h4>None</h4>
         {% endif %}
-    </div>
-    <div class="panel panel-default">
-        <div class="panel-heading">Redmapper</div>
-        {% if xmatch.RDM_ID > 0 %}
-        <h2>OH YEAH !!!</h2>
+        </div>
+        </div>
+
+        <div class="panel panel-default">
+        <div class="panel-heading">
+	<h4 class="panel-title">
+	  <a data-toggle="collapse" href="#RDM"> Red Mapper II <span class="badge pull-right"> {{ xmatch.nbmatch.rdm }} </span> </a></h4> 
+	</div>
+	<div id="RDM" class="panel-collapse collapse">
+        {% if xmatch.xmatch.RDM_ID > 0 %}
+	    <table class="table table-hover">
+            <tr>
+	      <th>ID</th>
+	      <th>NAME</th>
+	      <th>RA</th>
+	      <th>DEC</th>
+	      <th>z lambda</th>
+	      <th>z spec</th>
+	      <th>dist</th>
+            </td>
+                {% for item in xmatch.xmatch %}
+                    <tr>
+		      <td>{{ item.RDM_ID }}</td>
+		      <td>{{ item.RDM_NAME }}</td>
+		      <td>{{ item.RDM_RA }}</td>
+		      <td>{{ item.RDM_DEC }}</td> 
+		      <td>{{ item.RDM_Z_LAMBDA }}</td> 
+		      <td>{{ item.RDM_Z_SPEC }}</td> 
+		      <td>{{ item.RDM_SEP }}</td>
+		    </tr>
+                {% endfor %}
+            </table>
 	{% else %}
-	N/A
+	<h4>None</h4>
         {% endif %}
-    </div>
-    <div class="panel panel-default">
-        <div class="panel-heading">Wen</div>
-        {% if xmatch.WEN_ID > 0 %}
-        <h2>OH YEAH !!!</h2>
+        </div>
+        </div>
+
+        <div class="panel panel-default">
+        <div class="panel-heading">
+	<h4 class="panel-title">
+	  <a data-toggle="collapse" href="#WEN"> WEN catalogue <span class="badge pull-right"> {{ xmatch.nbmatch.wen }} </span> </a></h4> 
+	</div>
+	<div id="WEN" class="panel-collapse collapse">
+        {% if xmatch.xmatch.WEN_ID > 0 %}
+	    <table class="table table-hover">
+            <tr>
+	      <th>ID</th>
+	      <th>NAME</th>
+	      <th>RA</th>
+	      <th>DEC</th>
+	      <th>z phot</th>
+	      <th>z spec</th>
+	      <th>dist</th>
+            </td>
+                {% for item in xmatch.xmatch %}
+                    <tr>
+		      <td>{{ item.WEN_ID }}</td>
+		      <td>{{ item.WEN_NAME }}</td>
+		      <td>{{ item.WEN_RA }}</td>
+		      <td>{{ item.WEN_DEC }}</td> 
+		      <td>{{ item.WEN_PHOTZ }}</td> 
+		      <td>{{ item.WEN_SPECZ }}</td> 		     
+		      <td>{{ item.WEN_SEP }}</td>
+		    </tr>
+                {% endfor %}
+            </table>
 	{% else %}
-	N/A
+	<h4>None</h4>
         {% endif %}
-    </div>
+        </div>
+        </div>
+
+
+
+
+
     
 </div>
 </div>
 
     {% else %}
-    <em> No result yet </em>
+    <em> No x-match yet </em>
     {% endif %}
 
 
