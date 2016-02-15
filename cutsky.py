@@ -162,7 +162,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     outputymap = cStringIO.StringIO()
     plt.savefig(outputymap,bbox_inches='tight', format='png')
 
-
+    del(ymap)
 
     filemapx = os.path.join(BASE_DIR,'xmatch/data/map_rosat_70-200_2048.fits')
     xmap    = hp.read_map(filemapx, verbose=False, dtype=np.float32, memmap=True)
@@ -189,7 +189,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
         #plt.savefig('outxmap.png',bbox_inches='tight')
     outputxmap = cStringIO.StringIO()
     plt.savefig(outputxmap,bbox_inches='tight', format='png')
-
+    del(xmap)
 
     ## fig=plt.figure()
     ## ax3_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
