@@ -74,7 +74,7 @@ def hp_project(hp_map, w, npix,coordsys):
     ----
         A.Beelen, M.douspis
     """
-    xx, yy     = np.meshgrid(np.arange(npix), np.arange(npix))
+    yy, xx     = np.meshgrid(np.arange(npix), np.arange(npix))
     alon, alat = w.wcs_pix2world(xx,yy,0)
 
     if coordsys=='GALACTIC':
@@ -144,7 +144,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     levels=[ypatch.max()/3., ypatch.max()/2.]
     print((ypatch.max()-ypatch.mean()) , 3*np.std(ypatch))
     if ((ypatch.max()-ypatch.mean()) > 3*np.std(ypatch)):
-        ax1_wcs.contour(ypatch,levels=levels,colors="white")
+        ax1_wcs.contour(ypatch,levels=levels,colors="white",interpolation='bicubic')
         
     ax1_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
     if np.str(coordf)=="ECLIPTIC":
@@ -177,7 +177,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     ax2_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
     ax2_wcs.imshow(xpatch, interpolation='none', origin='lower')
     if ((ypatch.max()-ypatch.mean()) > 3*np.std(ypatch)):
-        ax2_wcs.contour(ypatch,levels=levels, transform=ax2_wcs.get_transform(wcs_proj),colors="white")
+        ax2_wcs.contour(ypatch,levels=levels, transform=ax2_wcs.get_transform(wcs_proj),colors="white",interpolation='bicubic')
     ax2_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
     if np.str(coordf)=="ECLIPTIC":
         ax2_wcs.coords['ra'].set_ticks(color='white')
