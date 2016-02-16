@@ -141,8 +141,11 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     wcs_proj=WCS(w.to_header())
     ax1_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
     ax1_wcs.imshow(ypatch, interpolation='none', origin='lower' )
-    levels=[ypatch.max()/4., ypatch.max()/2.]
-    ax1_wcs.contour(ypatch,levels=levels,colors="white")
+    levels=[ypatch.max()/3., ypatch.max()/2.]
+    print((ypatch.max()-ypatch.mean()) , 3*np.std(ypatch))
+    if ((ypatch.max()-ypatch.mean()) > 3*np.std(ypatch)):
+        ax1_wcs.contour(ypatch,levels=levels,colors="white")
+        
     ax1_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
     if np.str(coordf)=="ECLIPTIC":
         ax1_wcs.coords['ra'].set_ticks(color='white')
@@ -173,7 +176,8 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     wcs_proj=WCS(w.to_header())
     ax2_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
     ax2_wcs.imshow(xpatch, interpolation='none', origin='lower')
-    ax2_wcs.contour(ypatch,levels=levels, transform=ax2_wcs.get_transform(wcs_proj),colors="white")
+    if ((ypatch.max()-ypatch.mean()) > 3*np.std(ypatch)):
+        ax2_wcs.contour(ypatch,levels=levels, transform=ax2_wcs.get_transform(wcs_proj),colors="white")
     ax2_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
     if np.str(coordf)=="ECLIPTIC":
         ax2_wcs.coords['ra'].set_ticks(color='white')
