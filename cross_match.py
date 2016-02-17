@@ -32,7 +32,6 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
         return
 
     #reads the ini file
-
     conf = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
     conf.read(file_input)
 
@@ -40,6 +39,10 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
     # CATALOG INPUT to be checked with the ones in .ini
     # TODO: should be given as argument
 
+
+    nbmatch = {'global':0, 'szdb':0, 'pxcc':0, 'rdm':0 , 'wen':0}
+    cnt = 0
+    
     if conf['inputs']['cat']:
 	#cat=fits.open('PACT_cat_equ_reg1.fits')
         cc    = fits.getdata(conf.get('inputs','cat'), conf.getint('inputs','ext'))
@@ -88,12 +91,12 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
                     x_sep       = temp_sep[wheregood]
                 elif np.sum(wheregood)==1:
                     x_id_in_cat = [0]
-                    x_id        = [temp_id*1]
+                    x_id        = temp_id
                     x_coord     = coord_cc[x_id]
                     x_sep       = temp_sep
+                    cnt=cnt+1
 
-
-                # fields = [str(x) for x in fields] # removes u
+                    # fields = [str(x) for x in fields] # removes u
                 ccm_tab  = Table(cc[x_id])         # make cat as Table
                 ccm_tab.keep_columns(fields)        # extract the fields
 
@@ -102,7 +105,7 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
 
                 # adding columns related to the crossmatch
                 ccm_tab.add_column(Table.Column(name='INDEX', data=x_id_in_cat))
-                ccm_tab.add_column(Table.Column(name=cat.upper()+'_ID', data=x_id))
+                ccm_tab.add_column(Table.Column(name=cat.upper()+'_ID', data=x_id+1))
                 ccm_tab.add_column(Table.Column(name=cat.upper()+'_SEP', data=x_sep.arcmin))
 
 
@@ -123,6 +126,14 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
     for matched_cat in match_result.keys():
         new = join(new, match_result[matched_cat], keys='INDEX', join_type='outer')
         new[matched_cat.upper()+'_ID'].fill_value = -1
+        if match_result[matched_cat][matched_cat.upper()+'_ID'] > 0:
+            nbmatch[matched_cat.lower()]=1
+        
+        
+    nbmatch['global']=cnt
+     
+    print('nbmatch', nbmatch)
+        
 
 ###### NED on the not X matched
 ######
@@ -153,7 +164,7 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
 
 
     # Should return match_cat instead...
-    return(new)
+    return({'xmatch':new,'nbmatch': nbmatch})
 
 
 #if __name__ == "__main__":
