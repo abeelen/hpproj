@@ -1,11 +1,12 @@
 #! /anaconda/bin/python
 
+import logging
+logger = logging.getLogger('django')
 
 import healpy as hp
 from astropy import wcs
 import numpy as np
 from astropy.coordinates import SkyCoord
-from astropy.io import ascii
 from photutils import CircularAperture
 from photutils import aperture_photometry
 from astropy import coordinates as coord
@@ -13,7 +14,11 @@ import astropy.units as u
 import cStringIO
 
 import os
-from WebServices.settings import BASE_DIR
+
+try:
+    from WebServices.settings import BASE_DIR
+except ImportError:
+    BASE_DIR="../"
 
 def build_WCS(lon, lat, pixsize=0.01, npix=512, coordsys='ECLIPTIC', proj_type='TAN'):
     """Construct a WCS object for a 2D map
@@ -170,123 +175,98 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     if np.str(coordframe)=="fk5":
         coordf = 'ECLIPTIC'
 
-
-
     doxmap = True
 
     w       = build_WCS(glon,glat, pixsize=pixel_size/60., npix=n_pixels, coordsys=np.str(coordf), proj_type='TAN')
 
+    # Set up the figure
+
+    blank = np.zeros((n_pixels, n_pixels))
+    logger.warning('setting figure')
+    fig=plt.figure()
+    wcs_proj=WCS(w.to_header())
+    ax_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
+    proj_im = ax_wcs.imshow(blank, interpolation='none', origin='lower' )
+    ax_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
+
+    if np.str(coordf)=="ECLIPTIC":
+        ax_wcs.coords['ra'].set_ticks(color='white')
+        ax_wcs.coords['dec'].set_ticks(color='white')
+        ax_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
+        ax_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
+    elif np.str(coordf)=="GALACTIC":
+        ax_wcs.coords['glon'].set_ticks(color='red')
+        ax_wcs.coords['glat'].set_ticks(color='red')
+        ax_wcs.coords['glon'].set_axislabel(r'$l$')
+        ax_wcs.coords['glat'].set_axislabel(r'$b$')
+
+    logger.warning('reading Ymap')
+    # MILCA map
     filemap = os.path.join(BASE_DIR,'xmatch/data/MILCA_TSZ_2048_spectral_spacial_local_10arcmin.fits')
     ymap    = hp.read_map(filemap, verbose=False, dtype=np.float32) #, memmap=True)
 
-    # ypatch  = hp_project(ymap, w, n_pixels,np.str(coordf))
+    logger.warning('projecting pixels')
+    # Extract mask & pixels, good for all healpix maps with same nside
     mask, ipix = hp_ipx(w, n_pixels, np.str(coordf), hp.npix2nside(len(ymap)))
+
     ypatch = np.ma.array(np.zeros((n_pixels, n_pixels)), mask=~mask, fill_value=np.nan)
     ypatch[mask] = ymap[ipix]
 
-    fig=plt.figure()
-    wcs_proj=WCS(w.to_header())
-    ax1_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-    ax1_wcs.imshow(ypatch, interpolation='none', origin='lower' )
+    logger.warning('updating Ymap')
+
+    # Update figure
+    proj_im.set_data(ypatch)
+    proj_im.set_clim(vmin=ypatch.min(), vmax=ypatch.max())
+
+
+    logger.warning('contouring Ymap')
     levels=[ypatch.max()/3., ypatch.max()/2.]
-    print((ypatch.max()-ypatch.mean()) , 3*np.std(ypatch))
-    if ((ypatch.max()-ypatch.mean()) > 3*np.std(ypatch)):
-        ax1_wcs.contour(ypatch,levels=levels,colors="white",interpolation='bicubic')
+    if ((ypatch.max()-ypatch.mean()) > 3*ypatch.std()):
+        proj_cont = ax_wcs.contour(ypatch,levels=levels,colors="white",interpolation='bicubic')
+    else:
+        proj_cont = None
 
-    ax1_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
-    if np.str(coordf)=="ECLIPTIC":
-        ax1_wcs.coords['ra'].set_ticks(color='white')
-        ax1_wcs.coords['dec'].set_ticks(color='white')
-        ax1_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
-        ax1_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-    elif np.str(coordf)=="GALACTIC":
-        ax1_wcs.coords['glon'].set_ticks(color='red')
-        ax1_wcs.coords['glat'].set_ticks(color='red')
-        ax1_wcs.coords['glon'].set_axislabel(r'$l$')
-        ax1_wcs.coords['glat'].set_axislabel(r'$b$')
-
-
-    print('map y ok')
-    #plt.savefig('outymap.png',bbox_inches='tight')
+    logger.warning('saving Ymap')
     outputymap = cStringIO.StringIO()
-    plt.savefig(outputymap,bbox_inches='tight', format='png',dpi=75)
+    plt.savefig(outputymap,bbox_inches='tight', format='png',dpi=75, frameon=False)
+    logger.warning('Ymap done')
 
-    # del(ymap)
-
+    logger.warning('reading Xmap')
+   # Rosat Map
     filemapx = os.path.join(BASE_DIR,'xmatch/data/map_rosat_70-200_2048.fits')
     xmap    = hp.read_map(filemapx, verbose=False, dtype=np.float32) #, memmap=True)
 
-#    xpatch  = hp_project(xmap, w, n_pixels,np.str(coordf))
+    logger.warning('updating Xmap')
     xpatch = np.ma.array(np.zeros((n_pixels, n_pixels)), mask=~mask, fill_value=np.nan)
     xpatch[mask] = xmap[ipix]
 
-    fig=plt.figure()
-    wcs_proj=WCS(w.to_header())
-    ax2_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-    ax2_wcs.imshow(xpatch, interpolation='none', origin='lower')
-    if ((ypatch.max()-ypatch.mean()) > 3*np.std(ypatch)):
-        ax2_wcs.contour(ypatch,levels=levels, transform=ax2_wcs.get_transform(wcs_proj),colors="white",interpolation='bicubic')
-    ax2_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
-    if np.str(coordf)=="ECLIPTIC":
-        ax2_wcs.coords['ra'].set_ticks(color='white')
-        ax2_wcs.coords['dec'].set_ticks(color='white')
-        ax2_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
-        ax2_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-    elif np.str(coordf)=="GALACTIC":
-        ax2_wcs.coords['glon'].set_ticks(color='red')
-        ax2_wcs.coords['glat'].set_ticks(color='red')
-        ax2_wcs.coords['glon'].set_axislabel(r'$l$')
-        ax2_wcs.coords['glat'].set_axislabel(r'$b$')
+    # Update figure
+    proj_im.set_data(xpatch)
+    proj_im.set_clim(vmin=xpatch.min(), vmax=xpatch.max())
 
-        #plt.savefig('outxmap.png',bbox_inches='tight')
+    logger.warning('saving Xmap')
     outputxmap = cStringIO.StringIO()
-    plt.savefig(outputxmap,bbox_inches='tight', format='png',dpi=75)
-    # del(xmap)
+    plt.savefig(outputxmap,bbox_inches='tight', format='png',dpi=75, frameon=False)
+    logger.warning('Xmap done')
 
-    ## fig=plt.figure()
-    ## ax3_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-    ## ax3_wcs.contour(ypatch,levels=levels, transform=ax3_wcs.get_transform(wcs_proj),colors="red")
-    ## ax3_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
-    ## if np.str(coordf)=="ECLIPTIC":
-    ##     ax3_wcs.coords['ra'].set_ticks(color='white')
-    ##     ax3_wcs.coords['dec'].set_ticks(color='white')
-    ##     ax3_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
-    ##     ax3_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-    ## if np.str(coordf)=="GALACTIC":
-    ##     ax3_wcs.coords['glon'].set_ticks(color='red')
-    ##     ax3_wcs.coords['glat'].set_ticks(color='red')
-    ##     ax3_wcs.coords['glon'].set_axislabel(r'$l$')
-    ##     ax3_wcs.coords['glat'].set_axislabel(r'$b$')
+    # Only the contour
+    logger.warning('updating Contour')
 
- #   outputcmap = cStringIO.StringIO()
- #   plt.savefig(outputcmap,bbox_inches='tight', format='png')
+    proj_im.set_visible(False)
+    if not proj_cont:
+        ax_wcs.contour(ypatch,levels=levels, transform=ax_wcs.get_transform(wcs_proj),colors="red", interpolation="bicubic")
 
-
-
-    fig=plt.figure()
-    ax3_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-    ax3_wcs.contour(ypatch,levels=levels, transform=ax3_wcs.get_transform(wcs_proj),colors="red")
-    ax3_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
-    if np.str(coordf)=="ECLIPTIC":
-        ax3_wcs.coords['ra'].set_ticks(color='white')
-        ax3_wcs.coords['dec'].set_ticks(color='white')
-        ax3_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
-        ax3_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-    if np.str(coordf)=="GALACTIC":
-        ax3_wcs.coords['glon'].set_ticks(color='red')
-        ax3_wcs.coords['glat'].set_ticks(color='red')
-        ax3_wcs.coords['glon'].set_axislabel(r'$l$')
-        ax3_wcs.coords['glat'].set_axislabel(r'$b$')
-
+    logger.warning('saving Contour')
     outputcmap = cStringIO.StringIO()
-    plt.savefig(outputcmap,bbox_inches='tight', format='png')
+    plt.savefig(outputcmap,bbox_inches='tight', format='png', dpi=75, frameon=False)
+    logger.warning('contour done')
 
 
 
 ########################################################### APERTURE
 
 
-    print('map ok')
+    logger.warning('map ok')
 
 
     positions = [(n_pixels/2., n_pixels/2.)]
@@ -294,7 +274,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
     yphot = aperture_photometry(ypatch-np.median(ypatch), apertures)
     xphot = aperture_photometry(xpatch-np.median(xpatch), apertures)
 
-    print('phot ok', xphot)
+    logger.warning('phot ok')
 
 
     return {'mapy':outputymap.getvalue().encode("base64").strip(),
@@ -304,5 +284,4 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
             'yphot':yphot,}
 
 if __name__ == '__main__':
-    print "toto"
     a = cut_sky()
