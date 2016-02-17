@@ -1,9 +1,7 @@
 #! /anaconda/bin/python
 
-
 import matplotlib.image as mpimg
 import healpy as hp
-import cgi                        # Module d'interface avec le serveur web
 from astropy import wcs
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -13,8 +11,7 @@ from photutils import aperture_photometry
 from astropy import coordinates as coord
 import astropy.units as u
 import cStringIO
- 
-import config_pact
+
 import cross_match
 
 def build_WCS(lon, lat, pixsize=0.01, npix=512, coordsys='ECLIPTIC', proj_type='TAN'):
@@ -40,11 +37,11 @@ def build_WCS(lon, lat, pixsize=0.01, npix=512, coordsys='ECLIPTIC', proj_type='
         A.Beelen
    """
     w = wcs.WCS(naxis=2)
-    
+
     w.wcs.crpix = np.ones(2.)*npix/2
     w.wcs.cdelt = np.array([-pixsize, pixsize])
     w.wcs.crval = np.array([lon, lat])
-    
+
     if coordsys == 'GALACTIC':
         w.wcs.ctype = [ coord+proj_type for coord in ['GLON-', 'GLAT-']]
     elif coordsys == 'ECLIPTIC':
@@ -73,7 +70,7 @@ def hp_project(hp_map, w, npix,coordsys):
     ----
         A.Beelen, M.douspis
     """
-    xx, yy     = np.meshgrid(np.arange(npix), np.arange(npix))
+    yy, xx     = np.meshgrid(np.arange(npix), np.arange(npix))
     alon, alat = w.wcs_pix2world(xx,yy,0)
 
     if coordsys=='GALACTIC':
@@ -83,7 +80,7 @@ def hp_project(hp_map, w, npix,coordsys):
 
     position    = SkyCoord(alon,alat, frame=coord, unit="deg")
     alon2,alat2 = position.galactic.l.value, position.galactic.b.value
-    
+
     mask = ~np.logical_or(np.isnan(alon2),np.isnan(alat2)) # if pixel lies outside of projected area
     proj_map = np.ma.array(np.zeros((npix, npix)), mask=~mask, fill_value=np.nan)
     ipix = hp.ang2pix(hp.npix2nside(len(hp_map)), np.radians(90-alat2[mask]), np.radians(alon2[mask]))
@@ -102,7 +99,7 @@ from wcsaxes import WCS
 
 def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
 
-    
+
     cglo   = [lonlat[0]]
     cgla   = [lonlat[1]]
     index  = np.arange(np.size(cgla))
@@ -117,25 +114,25 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
 
     if np.str(coordframe)=="galactic":
         coordf = 'GALACTIC'
-        
+
     if np.str(coordframe)=="fk5":
         coordf = 'ECLIPTIC'
 
 
 
-    doxmap = True    
+    doxmap = True
 
-    filemap = '/DATA/PLANCK2/MILCA_TSZ_2048_spectral_spacial_local_10arcmin.fits'
+    filemap = '/home/abeelen/Python/WebService/WebServices/xmatch/data/MILCA_TSZ_2048_spectral_spacial_local_10arcmin.fits'
 
- 
+
     ymap    = hp.read_map(filemap, verbose=False)
 
     w       = build_WCS(glon,glat, pixsize=pixel_size/60., npix=n_pixels, coordsys=np.str(coordf), proj_type='TAN')
 
     ypatch  = hp_project(ymap, w, n_pixels,np.str(coordf))
 
-    
-    
+
+
     fig=plt.figure()
     wcs_proj=WCS(w.to_header())
     ax1_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
@@ -148,8 +145,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
         ax1_wcs.coords['dec'].set_ticks(color='white')
         ax1_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
         ax1_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-        
-    if np.str(coordf)=="GALACTIC":
+    elif np.str(coordf)=="GALACTIC":
         ax1_wcs.coords['glon'].set_ticks(color='red')
         ax1_wcs.coords['glat'].set_ticks(color='red')
         ax1_wcs.coords['glon'].set_axislabel(r'$l$')
@@ -161,12 +157,12 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
 
 
 
-    
-    filemapx = '/DATA/ROSAT/PATCHES/map_rosat_70-200_2048.fits'
+
+    filemapx = '/home/abeelen/Python/WebService/WebServices/xmatch/data/map_rosat_70-200_2048.fits'
     xmap    = hp.read_map(filemapx, verbose=False)
     xpatch  = hp_project(xmap, w, n_pixels,np.str(coordf))
-    
-    
+
+
     fig=plt.figure()
     wcs_proj=WCS(w.to_header())
     ax2_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
@@ -178,12 +174,12 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
         ax2_wcs.coords['dec'].set_ticks(color='white')
         ax2_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
         ax2_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-    if np.str(coordf)=="GALACTIC":
+    elif np.str(coordf)=="GALACTIC":
         ax2_wcs.coords['glon'].set_ticks(color='red')
         ax2_wcs.coords['glat'].set_ticks(color='red')
         ax2_wcs.coords['glon'].set_axislabel(r'$l$')
         ax2_wcs.coords['glat'].set_axislabel(r'$b$')
-            
+
         #plt.savefig('outxmap.png',bbox_inches='tight')
     outputxmap = cStringIO.StringIO()
     plt.savefig(outputxmap,bbox_inches='tight', format='png')
@@ -203,10 +199,14 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
         ax3_wcs.coords['glat'].set_ticks(color='red')
         ax3_wcs.coords['glon'].set_axislabel(r'$l$')
         ax3_wcs.coords['glat'].set_axislabel(r'$b$')
-  
+
     outputcmap = cStringIO.StringIO()
     plt.savefig(outputcmap,bbox_inches='tight', format='png')
 
     return {'mapy':outputymap.getvalue().encode("base64").strip(),
             'mapx':outputxmap.getvalue().encode("base64").strip(),
             'mapc':outputcmap.getvalue().encode("base64").strip()}
+
+if __name__ == '__main__':
+    print "toto"
+    a = cut_sky()
