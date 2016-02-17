@@ -88,7 +88,7 @@ def hp_ipx(w, npix,coordsys, nside):
 
     """
 
-    yy, xx     = np.meshgrid(np.arange(npix), np.arange(npix))
+    xx, yy     = np.meshgrid(np.arange(npix), np.arange(npix))
     alon, alat = w.wcs_pix2world(xx,yy,0)
 
     if coordsys=='GALACTIC':
@@ -125,7 +125,7 @@ def hp_project(hp_map, w, npix,coordsys):
     ----
         A.Beelen, M.douspis
     """
-    yy, xx     = np.meshgrid(np.arange(npix), np.arange(npix))
+    xx, yy     = np.meshgrid(np.arange(npix), np.arange(npix))
     alon, alat = w.wcs_pix2world(xx,yy,0)
 
     if coordsys=='GALACTIC':
@@ -177,7 +177,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic'):
 
     doxmap = True
 
-    w       = build_WCS(glon,glat, pixsize=pixel_size/60., npix=n_pixels, coordsys=np.str(coordf), proj_type='TAN')
+    w       = build_WCS(cglo[0],cgla[0], pixsize=pixel_size/60., npix=n_pixels, coordsys=np.str(coordf), proj_type='TAN')
 
     # Set up the figure
 
