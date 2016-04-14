@@ -15,7 +15,7 @@ from astropy import units as u
 import logging
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
 
-__all__ = ['build_WCS', 'build_WCS_cube', 'build_ctype', 'hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_project', 'gen_hpmap']
+__all__ = ['build_WCS', 'build_WCS_cube', 'build_WCS_2pts', 'build_ctype', 'hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_project', 'gen_hpmap']
 
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
@@ -285,7 +285,7 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=(512,1024), npix=None, proj_s
 
     Notes
     -----
-    By default relative_pos is used to place the sources, and the pixsize is derived, but if you define pixsize, 
+    By default relative_pos is used to place the sources, and the pixsize is derived, but if you define pixsize,
     then the relative_pos will be computed and the sources placed at the center of the image
 
     """
@@ -327,7 +327,7 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=(512,1024), npix=None, proj_s
     w.wcs.cdelt = np.array([-pixsize, pixsize])
     # Computes the on-sky position angle (East of North) between this SkyCoord and another.
     rot_angle = (coords[0].position_angle(coords[1])+Angle(90, unit='deg')).wrap_at('180d')
-    
+
     logging.debug('... rotating frame with %s deg'%rot_angle.degree)
     w.wcs.pc = [ [np.cos(rot_angle.radian) , np.sin(-rot_angle.radian)],
                  [np.sin(rot_angle.radian) , np.cos(rot_angle.radian)] ]
