@@ -489,9 +489,6 @@ def gen_hpmap(maps):
             * (filename, path_to_localfilename, healpix header)
             * (filename, healpix vector, healpix header)
 
-    index : int
-        The map to return in the list
-
     Return
     ------
     tuple
