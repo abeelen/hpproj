@@ -15,7 +15,7 @@ from astropy import units as u
 import logging
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
 
-__all__ = ['build_WCS', 'build_WCS_cube', 'build_WCS_2pts', 'build_ctype', 'hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_project', 'gen_hpmap']
+# __all__ = ['build_WCS', 'build_WCS_cube', 'build_WCS_2pts', 'build_ctype', 'hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_project', 'gen_hpmap']
 
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
