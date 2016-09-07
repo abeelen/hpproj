@@ -342,7 +342,7 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=(512,1024), npix=None, proj_s
 
     return w
 
-def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
+def hp_to_wcs(hp_map, hp_header, w, shape_out, npix=None, order=0):
     """Project an Healpix map on a wcs header, using nearest neighbors.
 
     Parameters
@@ -355,6 +355,8 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
         wcs object to project with
     shape_out : tuple
         shape of the output map (n_y, n_x)
+    npix : int
+        number of pixels in the final square map, superseed shape_out
     order : int (0|1)
         order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
 
@@ -363,6 +365,10 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
     array_like
         the projected map in a 2D array of shape shape_out
     """
+
+    if npix:
+        shape_out = (npix, npix)
+
     yy, xx = np.indices(shape_out)
 
     alon, alat = w.wcs_pix2world(xx,yy,0)
@@ -394,7 +400,7 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
 
     return proj_map.filled()
 
-def hp_to_wcs_ipx(hp_header, w, shape_out):
+def hp_to_wcs_ipx(hp_header, w, shape_out, npix=None):
     """Return the indexes of pixels of a given wcs and shape_out,
     within a nside healpix map.
 
@@ -406,6 +412,8 @@ def hp_to_wcs_ipx(hp_header, w, shape_out):
         wcs object to project with
     shape_out : tuple
         shape of the output map (n_y, n_x)
+    npix : int
+        number of pixels in the final square map, superseed shape_out
 
     Return
     ------
@@ -421,6 +429,10 @@ def hp_to_wcs_ipx(hp_header, w, shape_out):
     proj_map = np.ma.array(np.zeros(shape_out), mask=~mask, fill_value=np.nan)
     proj_map[mask] = healpix_map[ipix]
     """
+
+    if npix:
+        shape_out = (npix, npix)
+
     yy, xx = np.indices(shape_out)
 
     alon, alat = w.wcs_pix2world(xx,yy,0)
