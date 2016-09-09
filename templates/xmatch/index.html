@@ -33,39 +33,25 @@ Provided by IDOC/IAS/OSUPS.
 
     <legend>Output</legend>
 
+
     {% if maps %}
     <div class="col-lg-6">
-      {% if maps.mapy %}
+      {% for this_map in maps.values %}
       <div class="panel panel-default">
-	<div class="panel-heading"><h4> Planck y-Map</h4></div>
-	<img class="img-responsive" src="data:image/png;base64,{{maps.mapy}}" alt="Ymap" />
-	{% for val, xpix, ypix  in maps.yphot %}
-	<center><h4> Aperture y flux = {{ val|floatformat:"6" }} arcmin<SUP>2</SUP></h4></center>
-	{% endfor %}
+	<div class="panel-heading"><h4>{{this_map.name}}</h4></div>
+	<img class="img-responsive" src="data:image/png;base64,{{this_map.png}}" alt="{{map}}" />
+	<!-- {% for val, xpix, ypix  in map.yphot %} -->
+	<!-- <center><h4> Aperture y flux = {{ val|floatformat:"6" }} arcmin<SUP>2</SUP></h4></center> -->
+	<!-- {% endfor %} -->
       </div>
-      {% endif %}
+      {% endfor %}
     </div>
-    <div class="col-lg-6">
-      {% if maps.mapx %}
-      <div class="panel panel-default">
-	<div class="panel-heading"><h4>Rosat X-Map</h4></div>
-	<img class="img-responsive" src="data:image/png;base64,{{maps.mapx}}" alt="Xmap"/>
-	
-
-	{% for val, xpix, ypix  in maps.xphot %}
-	<center><h4> Aperture x flux = {{ val|floatformat:"6"}}  cnt/s<SUP></SUP></h4></center>
-	{% endfor %}
-      </div>
-      {% endif %}
-    </div>
-
-
 
     {% else %}
     <em> No y-map nor Xray map yet </em><p>
     {% endif %}
 
- 
+
   
     <div class="col-lg-12">
 

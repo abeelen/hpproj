@@ -1,4 +1,4 @@
-import config_pact
+#import config_pact
 import numpy as np
 #import matplotlib.pyplot as plt
 from astropy import coordinates as coord
@@ -42,7 +42,7 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
 
     nbmatch = {'global':0, 'szdb':0, 'pxcc':0, 'rdm':0 , 'wen':0}
     cnt = 0
-    
+
     if conf['inputs']['cat']:
 	#cat=fits.open('PACT_cat_equ_reg1.fits')
         cc    = fits.getdata(conf.get('inputs','cat'), conf.getint('inputs','ext'))
@@ -128,12 +128,12 @@ def cross_match( file_input,lonlat=[6.7,30.45],coordframe='galactic'):
         new[matched_cat.upper()+'_ID'].fill_value = -1
         if match_result[matched_cat][matched_cat.upper()+'_ID'] > 0:
             nbmatch[matched_cat.lower()]=1
-        
-        
+
+
     nbmatch['global']=cnt
-     
+
     print('nbmatch', nbmatch)
-        
+
 
 ###### NED on the not X matched
 ######
