@@ -1,0 +1,5 @@
+numpy
+healpy
+astropy
+photutils
+matplotlib
