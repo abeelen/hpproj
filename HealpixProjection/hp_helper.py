@@ -15,7 +15,12 @@ from astropy import units as u
 import logging
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
 
-__all__ = ['build_WCS', 'build_WCS_cube', 'build_WCS_2pts', 'build_ctype', 'hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_to_wcs_ipx', 'hp_project', 'gen_hpmap']
+__all__ = ['build_WCS', 'build_WCS_lonlat',
+           'build_WCS_cube', 'build_WCS_cube_lonlat',
+           'build_WCS_2pts', 'build_ctype',
+           'hp_is_nest', 'hp_celestial',
+           'hp_to_wcs', 'hp_to_wcs_ipx',
+           'hp_project', 'gen_hpmap']
 
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
@@ -105,57 +110,6 @@ def build_ctype(coordsys, proj_type):
         return [ coord+proj_type for coord in ['RA---', 'DEC--']]
     else:
         raise ValueError('Unsupported coordsys')
-
-def _lonlat(build_WCS_func):
-    """Will decorate the build_WCS function to be able to use it with lon/lat, proj_sys instead of an `astropy.coordinate.SkyCoord` object
-
-    Parameters
-    ----------
-    build_WCS_func : fct
-    a build_WCS_func function (with coords as the first argument
-
-    Return
-    ------
-    The same function decorated
-
-    Notes
-    -----
-    To use this decorator
-    build_WCS_lonlat = _lonlat(build_WCS)
-    or use @_lonlat on the function declaration
-
-    """
-
-    import string
-
-    def decorator(lon, lat, src_sys='EQUATORIAL', **kargs):
-        if src_sys == 'EQUATORIAL':
-            frame = "icrs"
-        elif src_sys == 'GALACTIC':
-            frame = "equatorial"
-        else:
-            raise ValueError('Unsuported coordinate system for the projection')
-
-            coord = SkyCoord(lon,lat, frame=frame, unit="deg")
-            return build_WCS_func(coord, **kargs)
-
-    decorator._coord = build_WCS_func
-    decorator.__doc__ = str(build_WCS_func.__doc__).split('\n')[0] +\
-    """
-    Parameters
-    ----------
-    lon,lat : floats
-        the sky coordinates of the center of projection
-    src_sys :  str, ('GALACTIC', 'EQUATORIAL')
-        the coordinate system of the longitude and latitude
-    """ + string.join(str(build_WCS.__doc__).split('\n')[6:],'\n') + \
-    """
-    Notes
-    -----
-    You can access a function using only catalogs with the ._coord() method
-    """
-    return decorator
-
 
 def build_WCS(coord, pixsize=0.01, shape_out=(512, 512), npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
@@ -258,6 +212,58 @@ def build_WCS_cube(coord, index, pixsize=0.01, shape_out=(512, 512), npix=None, 
 
     return w
 
+
+def _lonlat(build_WCS_func):
+    """Will decorate the build_WCS function to be able to use it with lon/lat, proj_sys instead of an `astropy.coordinate.SkyCoord` object
+
+    Parameters
+    ----------
+    build_WCS_func : fct
+    a build_WCS_func function (with coords as the first argument
+
+    Return
+    ------
+    The same function decorated
+
+    Notes
+    -----
+    To use this decorator
+    build_WCS_lonlat = _lonlat(build_WCS)
+    or use @_lonlat on the function declaration
+
+    """
+
+    def decorator(lon, lat, src_sys='EQUATORIAL', **kargs):
+        if src_sys == 'EQUATORIAL':
+            frame = "icrs"
+        elif src_sys == 'GALACTIC':
+            frame = "equatorial"
+        else:
+            raise ValueError('Unsuported coordinate system for the projection')
+
+            coord = SkyCoord(lon,lat, frame=frame, unit="deg")
+            return build_WCS_func(coord, **kargs)
+
+    decorator._coord = build_WCS_func
+    decorator.__doc__ = str(build_WCS_func.__doc__).split('\n')[0] +\
+    """
+    Parameters
+    ----------
+    lon,lat : floats
+        the sky coordinates of the center of projection
+    src_sys :  str, ('GALACTIC', 'EQUATORIAL')
+        the coordinate system of the longitude and latitude
+    """ + '\n'.join(str(build_WCS.__doc__).split('\n')[6:]) + \
+    """
+    Notes
+    -----
+    You can access a function using only catalogs with the ._coord() method
+    """
+    return decorator
+
+build_WCS_lonlat = _lonlat(build_WCS)
+build_WCS_cube_lonlat = _lonlat(build_WCS_cube)
+
 def build_WCS_2pts(coords, pixsize=None, shape_out=(512,1024), npix=None, proj_sys='EQUATORIAL', proj_type='TAN', relative_pos=(2./5, 3./5)):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
 
@@ -336,7 +342,7 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=(512,1024), npix=None, proj_s
 
     return w
 
-def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
+def hp_to_wcs(hp_map, hp_header, w, shape_out, npix=None, order=0):
     """Project an Healpix map on a wcs header, using nearest neighbors.
 
     Parameters
@@ -349,6 +355,8 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
         wcs object to project with
     shape_out : tuple
         shape of the output map (n_y, n_x)
+    npix : int
+        number of pixels in the final square map, superseed shape_out
     order : int (0|1)
         order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
 
@@ -357,6 +365,10 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
     array_like
         the projected map in a 2D array of shape shape_out
     """
+
+    if npix:
+        shape_out = (npix, npix)
+
     yy, xx = np.indices(shape_out)
 
     alon, alat = w.wcs_pix2world(xx,yy,0)
@@ -388,7 +400,7 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out, order=0):
 
     return proj_map.filled()
 
-def hp_to_wcs_ipx(hp_header, w, shape_out):
+def hp_to_wcs_ipx(hp_header, w, shape_out, npix=None):
     """Return the indexes of pixels of a given wcs and shape_out,
     within a nside healpix map.
 
@@ -400,6 +412,8 @@ def hp_to_wcs_ipx(hp_header, w, shape_out):
         wcs object to project with
     shape_out : tuple
         shape of the output map (n_y, n_x)
+    npix : int
+        number of pixels in the final square map, superseed shape_out
 
     Return
     ------
@@ -415,6 +429,10 @@ def hp_to_wcs_ipx(hp_header, w, shape_out):
     proj_map = np.ma.array(np.zeros(shape_out), mask=~mask, fill_value=np.nan)
     proj_map[mask] = healpix_map[ipix]
     """
+
+    if npix:
+        shape_out = (npix, npix)
+
     yy, xx = np.indices(shape_out)
 
     alon, alat = w.wcs_pix2world(xx,yy,0)
