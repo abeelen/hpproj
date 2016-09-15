@@ -15,6 +15,7 @@ except ImportError:
     from astropy.wcs import WCS
 
 from astropy.io import fits
+from astropy import units as u
 from astropy.coordinates import SkyCoord
 from photutils import CircularAperture
 from photutils import aperture_photometry
@@ -42,10 +43,14 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
-from hpproject.hp_helpers import build_WCS, hp_to_wcs_ipx
+from .hp_helper import build_WCS, hp_to_wcs_ipx
 
+DEFAULT_npix = 256
+DEFAULT_pixsize = 1
+DEFAULT_coordframe = 'galactic'
+DEFAULT_ctype = 'TAN'
 
-def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic', maps=None):
+def cutsky( lonlat=[0,0],patch=[256,1],coordframe='galactic', ctype=DEFAULT_ctype, maps=None):
 
     if not maps:
         raise FileNotFoundError("No healpix map to project")
@@ -63,7 +68,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic', maps=None):
     coord_in = SkyCoord(lonlat[0],lonlat[1], unit=u.deg, frame=coordframe)
 
     # Build the target WCS header
-    w = build_WCS(coord_in, pixsize=pixel_size/60., npix=n_pixels, proj_sys=np.str(coordf), proj_type='TAN')
+    w = build_WCS(coord_in, pixsize=pixel_size/60., npix=n_pixels, proj_sys=np.str(coordf), proj_type=ctype)
 
     # Group the maps by header, keys is NSIDE_ORDERING_COORDSYS
     grouped_maps = {}
@@ -199,7 +204,7 @@ def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic', maps=None):
     #         'xphot':xphot,
     #         'yphot':yphot,}
 
-def parse_args():
+def parse_args(args):
     """Parse arguments from the command line"""
     parser = argparse.ArgumentParser(description="Reproject the spherical sky onto a plane.")
     parser.add_argument('lon', type=float,
@@ -210,9 +215,13 @@ def parse_args():
     # Removed the default argument from here otherwise the config file
     # wont be used
 
-    parser.add_argument('--npix', nargs=1, type=int,
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--npix', type=int,
                         help='number of pixels (default 256)')
-    parser.add_argument('--pixsize', nargs=1, type=float,
+    group.add_argument('--radius', type=float,
+                       help='radius of the requested region [deg] ')
+
+    parser.add_argument('--pixsize', type=float,
                         help='pixel size [arcmin] (default 1)')
 
     parser.add_argument('--coordframe', required=False,
@@ -220,26 +229,39 @@ def parse_args():
                         lat. of the projection and the projected map \
                         (default: galactic)',
                         choices=['galactic', 'fk5'])
-
-    parser.add_argument('--conffile', required=False,
-                        help='Absolute path to a config file')
+    parser.add_argument('--ctype', required=False,
+                        help='any projection code supported by wcslib\
+                         (default:TAN)',
+                        choices=['AZP', 'SZP', 'TAN', 'STG', 'SIN',
+                                 'ARC', 'ZPN', 'ZEA', 'AIR', 'CYP',
+                                 'CEA', 'CAR', 'MER', 'COP', 'COE',
+                                 'COD', 'COO', 'SFL', 'PAR', 'MOL',
+                                 'AIT', 'BON', 'PCO', 'TSC', 'CSC',
+                                 'QSC','HPX','XPH'])
 
     parser.add_argument('--mapfilenames', nargs='+', required=False,
                         help='Absolute path to the healpix maps')
 
+    parser.add_argument('--conf', required=False,
+                        help='Absolute path to a config file')
+
+
 
     # Do the actual parsing
-    args = parser.parse_args()
-    #args = parser.parse_args('0 0'.split())
+    parsed_args = parser.parse_args(args)
+    #parsed_args = parser.parse_args('0 0'.split())
 
     # Put the list of filenames into the same structure as the config
     # file, we are loosing the doContour keyword but...
-    if args.mapfilenames:
-        args.maps = dict([ (os.path.basename(filename), dict([('filename', filename) ]) ) for filename in args.mapfilenames ])
+    if parsed_args.mapfilenames:
+        parsed_args.maps = dict([ (os.path.basename(filename),
+                                   dict([('filename', filename) ]) )
+                                  for filename in
+                                  parsed_args.mapfilenames ])
     else:
-        args.maps = None
+        parsed_args.maps = None
 
-    return args
+    return parsed_args
 
 
 def parse_config(conffile=None):
@@ -268,6 +290,8 @@ def parse_config(conffile=None):
         options['pixsize'] = config.getfloat('cutsky', 'pixsize')
     if config.has_option('cutsky', 'coordframe'):
         options['coordframe'] = config.get('cutsky', 'coordframe')
+    if config.has_option('cutsky', 'ctype'):
+        options['ctype'] = config.get('cutsky', 'ctype')
 
     # Map list, only get the one which will be projected
     # Also check if contours are requested
@@ -287,31 +311,53 @@ def parse_config(conffile=None):
 
     return options
 
+def combine_args(args, config):
+    """
+    Combine the different sources of arguments (command line,
+    configfile or default arguments
+    """
+
+    # This is where the default arguments are set
+    pixsize = args.pixsize or config.get('pixsize') or \
+              DEFAULT_pixsize
+    coordframe = args.coordframe or config.get('coordframe') or \
+                 DEFAULT_coordframe
+    ctype = args.ctype or config.get('ctype') or \
+                 DEFAULT_ctype
+
+    # npix and radius are mutually exclusive, thus if radius is set we
+    # need to compute npix
+    if args.radius:
+        args.npix = int(args.radius/(float(pixsize)/60))
+
+    npix = args.npix or config.get('npix') or \
+           DEFAULT_npix
+
+    maps = args.maps or config.get('maps') or \
+           None
+
+    return npix, pixsize, coordframe, ctype, maps
+
+
 def main():
     # Mainly for test purpose
 
     from base64 import b64decode
 
     try:
-        args = parse_args()
+        args = parse_args(sys.argv[1:])
     except SystemExit:
         sys.exit()
 
     try:
-        config = parse_config(args.conffile)
+        config = parse_config(args.conf)
 
     except FileNotFoundError:
         config = {}
 
-    # This is where the default arguments are set
+    npix, pixsize, coordframe, ctype, maps = combine_args(args, config)
 
-    npix = args.npix or config.get('npix') or 256
-    pixsize = args.pixsize or config.get('pixsize') or 1
-    coordframe = args.coordframe or config.get('coordframe') or 'galactic'
-
-    maps = args.maps or config.get('maps') or None
-
-    result = cut_sky(lonlat=[args.lon, args.lat], patch=[npix, pixsize], coordframe=coordframe, maps=maps)
+    result = cutsky(lonlat=[args.lon, args.lat], patch=[npix, pixsize], coordframe=coordframe, ctype=ctype, maps=maps)
 
     for mapKey in result.keys():
         output = open(mapKey+'.png', 'wb')
