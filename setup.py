@@ -4,11 +4,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-ver_file = os.path.join('HealpixProjection', 'version.py')
-with open(ver_file) as f:
-    exec(f.read())
-
-opts = dict(name="HealpixProjection",
+opts = dict(name="hpproject",
             maintainer="Marian Douspis",
             maintainer_email="marian.douspis@ias.u-psud.fr",
             description='Projection of Healpix maps onto a planar grid',
@@ -27,9 +23,9 @@ opts = dict(name="HealpixProjection",
             package_dir={'hpproject'  : 'hpproject'},
             entry_points = {
                 'console_scripts': [
-                    'cutsky = hpproject.cutsky:main'],
-#            package_data=PACKAGE_DATA,
-#            requires=REQUIRES,
+                    'cutsky = hpproject.cutsky:main'] },
+            #            package_data=PACKAGE_DATA,
+            #            requires=REQUIRES,
 )
 
 
