@@ -1,2 +1,2 @@
-from .src.hpproject.hp_helpers import *
-from .src.hpproject.cutsky import *
+from .hpproject.hp_helpers import *
+from .hpproject.cutsky import *
