@@ -23,9 +23,11 @@ opts = dict(name="HealpixProjection",
             author_email='alexandre.beelen@ias.u-psud.fr',
 #            platforms=PLATFORMS,
             version='0.1',
-            packages=['cutsky','hpproject'],
-            package_dir={'hpproject'  : 'src/hpproject',
-                         'cutsky': 'src/cutsky'},
+            packages=['hpproject'],
+            package_dir={'hpproject'  : 'hpproject'},
+            entry_points = {
+                'console_scripts': [
+                    'cutsky = hpproject.cutsky:main'],
 #            package_data=PACKAGE_DATA,
 #            requires=REQUIRES,
 )
