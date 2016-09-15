@@ -4,7 +4,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-opts = dict(name="hpproject",
+opts = dict(name="hpproj",
             maintainer="Marian Douspis",
             maintainer_email="marian.douspis@ias.u-psud.fr",
             description='Projection of Healpix maps onto a planar grid',
@@ -19,11 +19,11 @@ opts = dict(name="hpproject",
             author_email='alexandre.beelen@ias.u-psud.fr',
 #            platforms=PLATFORMS,
             version='0.1',
-            packages=['hpproject'],
-            package_dir={'hpproject'  : 'hpproject'},
+            packages=['hpproj'],
+            package_dir={'hpproj'  : 'hpproj'},
             entry_points = {
                 'console_scripts': [
-                    'cutsky = hpproject.cutsky:main'] },
+                    'cutsky = hpproj.cutsky:main'] },
             #            package_data=PACKAGE_DATA,
             #            requires=REQUIRES,
 )

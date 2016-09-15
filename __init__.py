@@ -1,1 +1,1 @@
-from hpproject.hp_helper import *
+from hpproj.hp_helper import *
