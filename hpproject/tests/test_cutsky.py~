@@ -1,0 +1,4 @@
+import cutsky
+
+def test_parse_arg(self):
+    parsed_args = cutsky.parse_arg(''.split())
