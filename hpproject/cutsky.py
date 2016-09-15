@@ -42,7 +42,7 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
-from .hp_helpers import build_WCS, hp_to_wcs_ipx
+from hpproject.hp_helpers import build_WCS, hp_to_wcs_ipx
 
 
 def cut_sky( lonlat=[0,0],patch=[256,1],coordframe='galactic', maps=None):
