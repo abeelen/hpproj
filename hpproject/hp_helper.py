@@ -22,6 +22,8 @@ __all__ = ['build_WCS', 'build_WCS_lonlat',
            'hp_to_wcs', 'hp_to_wcs_ipx',
            'hp_project', 'gen_hpmap']
 
+DEFAULT_shape_out = (512, 512)
+
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
 
@@ -111,7 +113,7 @@ def build_ctype(coordsys, proj_type):
     else:
         raise ValueError('Unsupported coordsys')
 
-def build_WCS(coord, pixsize=0.01, shape_out=(512, 512), npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
+def build_WCS(coord, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
 
     Parameters
@@ -159,7 +161,7 @@ def build_WCS(coord, pixsize=0.01, shape_out=(512, 512), npix=None, proj_sys='EQ
 
     return w
 
-def build_WCS_cube(coord, index, pixsize=0.01, shape_out=(512, 512), npix=None, proj_sys='EQUATORIAL', proj_type='TAN', nitem=1):
+def build_WCS_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN', nitem=1):
     """Construct a :class:`~astropy.wcs.WCS` object for a 3D cube, where the 3rd dimension is an index
 
     Parameters
@@ -264,7 +266,7 @@ def _lonlat(build_WCS_func):
 build_WCS_lonlat = _lonlat(build_WCS)
 build_WCS_cube_lonlat = _lonlat(build_WCS_cube)
 
-def build_WCS_2pts(coords, pixsize=None, shape_out=(512,1024), npix=None, proj_sys='EQUATORIAL', proj_type='TAN', relative_pos=(2./5, 3./5)):
+def build_WCS_2pts(coords, pixsize=None, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN', relative_pos=(2./5, 3./5)):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
 
     Parameters
@@ -342,7 +344,7 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=(512,1024), npix=None, proj_s
 
     return w
 
-def hp_to_wcs(hp_map, hp_header, w, shape_out, npix=None, order=0):
+def hp_to_wcs(hp_map, hp_header, w, shape_out=DEFAULT_shape_out, npix=None, order=0):
     """Project an Healpix map on a wcs header, using nearest neighbors.
 
     Parameters
@@ -400,7 +402,7 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out, npix=None, order=0):
 
     return proj_map.filled()
 
-def hp_to_wcs_ipx(hp_header, w, shape_out, npix=None):
+def hp_to_wcs_ipx(hp_header, w, shape_out=DEFAULT_shape_out, npix=None):
     """Return the indexes of pixels of a given wcs and shape_out,
     within a nside healpix map.
 
