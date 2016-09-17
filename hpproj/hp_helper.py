@@ -24,12 +24,22 @@ __all__ = ['build_WCS', 'build_WCS_lonlat',
 
 DEFAULT_shape_out = (512, 512)
 
+VALID_PROJ = ['AZP', 'SZP', 'TAN', 'STG', 'SIN',
+              'ARC', 'ZPN', 'ZEA', 'AIR', 'CYP',
+              'CEA', 'CAR', 'MER', 'COP', 'COE',
+              'COD', 'COO', 'SFL', 'PAR', 'MOL',
+              'AIT', 'BON', 'PCO', 'TSC', 'CSC',
+              'QSC','HPX','XPH']
+
+VALID_GALACTIC = ['galactic', 'g']
+VALID_EQUATORIAL = ['celestial2000','equatorial', 'eq', 'c', 'q']
+
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
 
-    - 'C' or 'Q' : Celestial2000 = eQuatorial,
-    - 'E' : Ecliptic,
+    - 'EQ', 'C' or 'Q' : Celestial2000 = eQuatorial,
     - 'G' : Galactic
+    - 'E' : Ecliptic,
 
     only Celestial and Galactic are supported right now as the Ecliptic coordinate system was just recently pulled to astropy
 
@@ -51,11 +61,11 @@ def hp_celestial(hp_header):
 
     if coordsys:
         coordsys = coordsys.lower()
-        if coordsys == 'galactic' or coordsys == 'g':
+        if coordsys in VALID_GALACTIC:
             frame = Galactic()
-        elif coordsys == 'celestial2000' or coorsys == 'equatorial' or coordsys =='eq' or coordsys=='c' or coordsys=='q':
+        elif coordsys in VALID_EQUATORIAL:
             frame = ICRS()
-        elif coordsys == 'ecliptic' or coordsys == 'e':
+        elif coordsys in [ 'ecliptic', 'e']:
             raise ValueError("Ecliptic coordinate frame not yet supported by astropy")
         return frame
     else:
@@ -106,6 +116,9 @@ def build_ctype(coordsys, proj_type):
     coordsys = coordsys.lower()
     proj_type = proj_type.upper()
 
+    if not proj_type in VALID_PROJ:
+        raise ValueError('Unvupported projection')
+
     if coordsys == 'galactic' or coordsys == 'g':
         return [ coord+proj_type for coord in ['GLON-', 'GLAT-']]
     elif coordsys == 'equatorial' or coordsys == 'eq':
@@ -137,16 +150,22 @@ def build_WCS(coord, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_
         An corresponding wcs object
     """
 
-    if proj_sys == 'EQUATORIAL':
+    proj_sys = proj_sys.lower()
+
+    if proj_sys in VALID_EQUATORIAL:
         coord = coord.transform_to(ICRS)
         lon = coord.ra.deg
         lat = coord.dec.deg
-    elif proj_sys == 'GALACTIC':
+    elif proj_sys in VALID_GALACTIC:
         coord = coord.transform_to(Galactic)
         lon = coord.l.deg
         lat = coord.b.deg
     else:
         raise ValueError('Unsuported coordinate system for the projection')
+
+    proj_type = proj_type.upper()
+    if not proj_type in VALID_PROJ:
+        raise ValueError('Unvupported projection')
 
     if npix:
         shape_out = (npix, npix)
@@ -161,7 +180,7 @@ def build_WCS(coord, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_
 
     return w
 
-def build_WCS_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN', nitem=1):
+def build_WCS_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 3D cube, where the 3rd dimension is an index
 
     Parameters
@@ -180,8 +199,6 @@ def build_WCS_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_shape_out, npix
         the coordinate system of the plate (from HEALPIX maps....)
     proj_type : str ('TAN', 'SIN', 'GSL', ...)
         the projection system to use
-    nitem : int
-        the number of object in the 3rd dimension
 
     Returns
     -------
@@ -189,17 +206,22 @@ def build_WCS_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_shape_out, npix
         An corresponding wcs object
     """
 
-    if proj_sys == 'EQUATORIAL':
+    proj_sys = proj_sys.lower()
+
+    if proj_sys in VALID_EQUATORIAL:
         coord = coord.transform_to(ICRS)
         lon = coord.ra.deg
         lat = coord.dec.deg
-    elif proj_sys == 'GALACTIC':
+    elif proj_sys in VALID_GALACTIC:
         coord = coord.transform_to(Galactic)
         lon = coord.l.deg
         lat = coord.b.deg
     else:
         raise ValueError('Unsuported coordinate system for the projection')
 
+    proj_type = proj_type.upper()
+    if not proj_type in VALID_PROJ:
+        raise ValueError('Unvupported projection')
 
 
     if npix:
@@ -293,8 +315,11 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=DEFAULT_shape_out, npix=None,
 
     Notes
     -----
-    By default relative_pos is used to place the sources, and the pixsize is derived, but if you define pixsize,
-    then the relative_pos will be computed and the sources placed at the center of the image
+
+    By default relative_pos is used to place the sources, and the
+    pixsize is derived, but if you define pixsize, then the
+    relative_pos will be computed and the sources placed at the center
+    of the image
 
     """
 
@@ -304,29 +329,36 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=DEFAULT_shape_out, npix=None,
     w = WCS(naxis=2)
 
     if not pixsize:
-        # Compute pixsize from relative_pos and distance between sources
+        # Compute pixsize from relative_pos and distance between
+        # sources
         pix_distance = np.array(relative_pos)*shape_out[1]
         pix_distance = pix_distance.max() - pix_distance.min()
         ang_distance = coords[0].separation(coords[1])
         pixsize = ang_distance.deg / pix_distance
     else:
-        # Compute relative_pos from pixsize and distance between sources
+        # Compute relative_pos from pixsize and distance between
+        # sources
         ang_distance = coords[0].separation(coords[1])
         pix_distance = ang_distance.deg / pixsize
         relative_pos = pix_distance / shape_out[1]
         # Center it
         relative_pos = 0.5+np.array([-1.,1])*relative_pos/2
 
-    if proj_sys == 'EQUATORIAL':
+    proj_sys = proj_sys.lower()
+    if proj_sys in VALID_EQUATORIAL:
         coords = [ coord.transform_to(ICRS) for coord in coords]
         lon = coords[0].ra.deg
         lat = coords[0].dec.deg
-    elif proj_sys == 'GALACTIC':
+    elif proj_sys in VALID_GALACTIC:
         coords = [ coord.transform_to(Galactic) for coord in coords]
         lon = coords[0].l.deg
         lat = coords[0].b.deg
     else:
         raise ValueError('Unsuported coordinate system for the projection')
+
+    proj_type = proj_type.upper()
+    if not proj_type in VALID_PROJ:
+        raise ValueError('Unvupported projection')
 
     # Put the first source on the relative_pos[0]
     w.wcs.crpix = np.array([relative_pos[0],1./2], dtype=np.float)*(np.array(shape_out, dtype=np.float)[::-1])

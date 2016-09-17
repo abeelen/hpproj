@@ -43,7 +43,7 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
-from .hp_helper import build_WCS, hp_to_wcs_ipx
+from .hp_helper import build_WCS, hp_to_wcs_ipx, VALID_PROJ
 
 DEFAULT_npix = 256
 DEFAULT_pixsize = 1
@@ -232,12 +232,7 @@ def parse_args(args):
     parser.add_argument('--ctype', required=False,
                         help='any projection code supported by wcslib\
                          (default:TAN)',
-                        choices=['AZP', 'SZP', 'TAN', 'STG', 'SIN',
-                                 'ARC', 'ZPN', 'ZEA', 'AIR', 'CYP',
-                                 'CEA', 'CAR', 'MER', 'COP', 'COE',
-                                 'COD', 'COO', 'SFL', 'PAR', 'MOL',
-                                 'AIT', 'BON', 'PCO', 'TSC', 'CSC',
-                                 'QSC','HPX','XPH'])
+                        choices=VALID_PROJ)
 
     parser.add_argument('--mapfilenames', nargs='+', required=False,
                         help='Absolute path to the healpix maps')
