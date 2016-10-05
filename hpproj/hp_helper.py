@@ -7,6 +7,7 @@ from __future__ import print_function, division
 import numpy as np
 import healpy as hp
 
+from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.wcs import utils as wcs_utils
 from astropy.coordinates import ICRS, Galactic, SkyCoord, UnitSphericalRepresentation, Angle
@@ -20,7 +21,8 @@ __all__ = ['build_WCS', 'build_WCS_lonlat',
            'build_WCS_2pts', 'build_ctype',
            'hp_is_nest', 'hp_celestial',
            'hp_to_wcs', 'hp_to_wcs_ipx',
-           'hp_project', 'gen_hpmap']
+           'hp_project',
+'gen_hpmap', 'build_hpmap']
 
 DEFAULT_shape_out = (512, 512)
 
@@ -32,7 +34,7 @@ VALID_PROJ = ['AZP', 'SZP', 'TAN', 'STG', 'SIN',
               'QSC','HPX','XPH']
 
 VALID_GALACTIC = ['galactic', 'g']
-VALID_EQUATORIAL = ['celestial2000','equatorial', 'eq', 'c', 'q']
+VALID_EQUATORIAL = ['celestial2000','equatorial', 'eq', 'c', 'q', 'fk5']
 
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
@@ -88,7 +90,7 @@ def hp_is_nest(hp_header):
     ordering = hp_header.get('ORDERING')
 
     if ordering:
-        if ordering.lower() == 'nested':
+        if ordering.lower() == 'nested' or ordering.lower() == 'nest':
             return True
         elif ordering.lower() == 'ring':
             return False
@@ -172,6 +174,7 @@ def build_WCS(coord, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_
 
     w = WCS(naxis=2)
 
+    # CRPIX IS in Fortran convention
     w.wcs.crpix = np.array(shape_out, dtype=np.float)/2
     w.wcs.cdelt = np.array([-pixsize, pixsize])
     w.wcs.crval = [lon, lat]
@@ -403,7 +406,15 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out=DEFAULT_shape_out, npix=None, orde
     if npix:
         shape_out = (npix, npix)
 
-    yy, xx = np.indices(shape_out)
+    # Array of pixels centers -- from the astropy.wcs documentation :
+    #
+    # Here, *origin* is the coordinate in the upper left corner of the
+    # image.In FITS and Fortran standards, this is 1.  In Numpy and C
+    # standards this is 0.
+    #
+    # This as we are using the C convention, the center of the first pixel is -0.5, -0.5
+    yy, xx = np.indices(shape_out)-0.5
+
 
     alon, alat = w.wcs_pix2world(xx,yy,0)
     mask = ~np.logical_or(np.isnan(alon),np.isnan(alat)) # if pixel lies outside of projected area
@@ -467,7 +478,14 @@ def hp_to_wcs_ipx(hp_header, w, shape_out=DEFAULT_shape_out, npix=None):
     if npix:
         shape_out = (npix, npix)
 
-    yy, xx = np.indices(shape_out)
+    # Array of pixels centers -- from the astropy.wcs documentation :
+    #
+    # Here, *origin* is the coordinate in the upper left corner of the
+    # image.In FITS and Fortran standards, this is 1.  In Numpy and C
+    # standards this is 0.
+    #
+    # This as we are using the C convention, the center of the first pixel is -0.5, -0.5
+    yy, xx = np.indices(shape_out)-0.5
 
     alon, alat = w.wcs_pix2world(xx,yy,0)
     mask = ~np.logical_or(np.isnan(alon),np.isnan(alat)) # if pixel lies outside of projected area
@@ -523,8 +541,8 @@ def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALAC
         containing the array and the corresponding header
     """
 
-    w = build_WCS(coord, pixsize, npix, proj_sys, proj_type)
-    proj_map = hp_to_wcs(hp_map, hp_header, w, (npix, npix), order=order)
+    w = build_WCS(coord, pixsize, npix=npix, proj_sys=proj_sys, proj_type=proj_type)
+    proj_map = hp_to_wcs(hp_map, hp_header, w, npix=npix, order=order)
 
     if hdu:
         return fits.PrimaryHDU(proj_map, w.to_header(relax=0x20000))
@@ -551,3 +569,56 @@ def gen_hpmap(maps):
             iMap = hp.read_map(iMap, verbose=False)
             iMap = hp.ma(iMap)
         yield (filename, iMap, iHeader)
+
+def build_hpmap(filenames, low_mem=True):
+    """From a filename list, build a tuple usable with gen_hmap()
+
+    Parameters
+    ----------
+    filenames: list
+        A list of Nmap filenames of healpix maps
+    low_mem : bool
+        On low memory system, do not read the maps themselves (default: only header)
+
+    Return
+    ------
+    tuple list
+        A list of tuple which can be used by gen_hpmap    """
+
+    hp_maps = []
+    for filename in filenames:
+        hp_header = fits.getheader(filename, 1)
+        if low_mem == True:
+            hp_map = filename
+        else:
+            hp_map = hp.read_map(filename, verbose=False)
+            hp_map = hp.ma(hp_map)
+        hp_maps.append( (filename, hp_map, hp_header ) )
+    return hp_maps
+
+def group_hpmap(maps):
+    """Group into a dictionnary the hp_maps according to map properties
+
+    Parameters
+    ----------
+    hpmap: tuple list
+        A list of tuple which can be used by gen_hpmap
+
+    Return
+    ------
+    dict
+        A dictionnary where each key contains hpmap sharing the same properties
+
+    """
+    grouped_hpmaps = {}
+
+    for (filename, iMap, iHeader) in maps:
+        mapKey = "%s_%s_%s"%(iHeader['NSIDE'], iHeader['ORDERING'],  hp_celestial(iHeader).name)
+        iHeader['mapKey'] = mapKey
+
+        if mapKey in grouped_hpmaps.keys():
+            grouped_hpmaps[mapKey].append((filename, iMap, iHeader))
+        else:
+            grouped_hpmaps[mapKey] = [(filename, iMap, iHeader)]
+
+    return grouped_hpmaps

@@ -24,6 +24,8 @@ opts = dict(name="hpproj",
             entry_points = {
                 'console_scripts': [
                     'cutsky = hpproj.cutsky:main'] },
+            setup_requires=['pytest-runner'],
+            tests_require=['pytest'],
             #            package_data=PACKAGE_DATA,
             #            requires=REQUIRES,
 )
