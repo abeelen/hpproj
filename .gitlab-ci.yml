@@ -15,7 +15,7 @@ before_script:
 stages:
   - test
 
-test_job:
+test_master:
   stage: test
   only:
     - master
