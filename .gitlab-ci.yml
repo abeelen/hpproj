@@ -1,0 +1,17 @@
+image: python:2.7
+
+before_script:
+  - pip install pip numpy pytest pytest-cov healpy astropy photutils matplotlib
+
+stages:
+  - test
+
+test_job:
+  stage: test
+  only:
+    - master
+  tags:
+    - test
+  script:
+    - py.test --cov
+    
