@@ -271,16 +271,10 @@ def _lonlat(build_WCS_func):
 
     """
 
-    def decorator(lon, lat, src_sys='EQUATORIAL', **kargs):
-        if src_sys == 'EQUATORIAL':
-            frame = "icrs"
-        elif src_sys == 'GALACTIC':
-            frame = "equatorial"
-        else:
-            raise ValueError('Unsuported coordinate system for the projection')
-
-            coord = SkyCoord(lon,lat, frame=frame, unit="deg")
-            return build_WCS_func(coord, **kargs)
+    def decorator(lon, lat, src_frame='EQUATORIAL', **kargs):
+        frame = equiv_celestial(src_frame)
+        coord = SkyCoord(lon,lat, frame=frame, unit="deg")
+        return build_WCS_func(coord, **kargs)
 
     decorator._coord = build_WCS_func
     decorator.__doc__ = str(build_WCS_func.__doc__).split('\n')[0] +\
@@ -289,7 +283,7 @@ def _lonlat(build_WCS_func):
     ----------
     lon,lat : floats
         the sky coordinates of the center of projection
-    src_sys :  str, ('GALACTIC', 'EQUATORIAL')
+    src_frame :  str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the longitude and latitude
     """ + '\n'.join(str(build_WCS.__doc__).split('\n')[6:]) + \
     """
