@@ -15,5 +15,4 @@ test_job:
   tags:
     - test
   script:
-    - py.test --cov
-    
+    - py.test
