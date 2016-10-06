@@ -214,11 +214,9 @@ class CutSkySquare:
             ax_wcs.coords['glon'].set_axislabel(r'$l$')
             ax_wcs.coords['glat'].set_axislabel(r'$b$')
 
-        cut_png = {}
         for cut_fit in cut_fits :
 
             legend = cut_fit['legend']
-
             logger.debug('plotting '+ legend)
 
             patch = cut_fit['fits'].data
@@ -228,7 +226,7 @@ class CutSkySquare:
             proj_im.set_clim(vmin=patch.min(), vmax=patch.max())
 
             if 'doContour' in patch_header.keys() and patch_header['doContour']:
-                logger.warning('contouring '+legend)
+                logger.debug('contouring '+legend)
                 levels=[patch.max()/3., patch.max()/2.]
                 if ((patch.max()-patch.mean()) > 3*patch.std()):
                     proj_cont = ax_wcs.contour(patch,levels=levels,colors="white",interpolation='bicubic')
@@ -237,14 +235,13 @@ class CutSkySquare:
 
             logger.debug('saving '+legend)
 
+            # Add the map to the cut_fit dictionnary
             output_map = BytesIO()
             plt.savefig(output_map,bbox_inches='tight', format='png',dpi=75, frameon=False)
-            cut_png[legend.replace(" ", "")] = {'legend': legend,
-                                                'fits': cut_fit['fits'],
-                                                'png': b64encode(output_map.getvalue()).strip() }
-            logger.warning(legend+ ' done')
+            cut_fit['png'] = b64encode(output_map.getvalue()).strip()
+            logger.debug(legend+ ' done')
 
-        return cut_png
+        return cut_fits
 
 def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_ctype, maps=None):
     """Old interface to cutsky -- Here for compability"""
@@ -254,7 +251,16 @@ def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_c
     if not maps:
         raise FileNotFoundError("No healpix map to project")
 
-    CutThoseMaps = CutSkySquare(maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
+    # Transform the way we defined maps
+    new_maps = []
+    for key in maps.iterkeys():
+        filename = maps[key]['filename']
+        opt = {'legend': key}
+        if maps[key].has_key('doContour'):
+            opt['doContour'] = maps[key]['doContour']
+        new_maps.append((filename, opt))
+
+    CutThoseMaps = CutSkySquare(new_maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
     result = CutThoseMaps.cutsky_png(lonlat=lonlat, coordframe=coordframe)
 
     return result
@@ -558,19 +564,15 @@ def main(): # pragma: no cover
     npix, pixsize, coordframe, ctype, maps = combine_args(args, config)
 
     CutThoseMaps = CutSkySquare(maps, npix=npix, pixsize=pixsize, ctype=ctype)
-    result = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
-
-    result = new_cutsky(lonlat=[args.lon, args.lat],
-                        patch=[npix, pixsize], coordframe=coordframe,
-                        ctype=ctype, maps=maps)
+    results = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
 
     # result = cutsky(lonlat=[args.lon, args.lat],
     #                 patch=[npix, pixsize], coordframe=coordframe,
     #                 ctype=ctype, maps=maps)
 
-    for mapKey in result.keys():
-        output = open(mapKey+'.png', 'wb')
-        output.write(b64decode(result[mapKey]['png']))
+    for result in results:
+        output = open(result['legend']+'.png', 'wb')
+        output.write(b64decode(result['png']))
         output.close()
 
 
