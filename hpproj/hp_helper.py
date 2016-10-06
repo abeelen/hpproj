@@ -22,7 +22,8 @@ __all__ = ['build_WCS', 'build_WCS_lonlat',
            'hp_is_nest', 'hp_celestial',
            'hp_to_wcs', 'hp_to_wcs_ipx',
            'hp_project',
-'gen_hpmap', 'build_hpmap']
+           'gen_hpmap', 'build_hpmap',
+           'equiv_celestial']
 
 DEFAULT_shape_out = (512, 512)
 
@@ -35,6 +36,23 @@ VALID_PROJ = ['AZP', 'SZP', 'TAN', 'STG', 'SIN',
 
 VALID_GALACTIC = ['galactic', 'g']
 VALID_EQUATORIAL = ['celestial2000','equatorial', 'eq', 'c', 'q', 'fk5']
+
+def equiv_celestial(frame):
+    """Return an equivalent ~astropy.coordfinates.builtin_frames
+
+    Notes
+    -----
+    We do not care of the differences between ICRS/FK4/FK5
+    """
+
+    frame = frame.lower()
+    if frame in VALID_GALACTIC:
+        frame = Galactic()
+    elif frame in VALID_EQUATORIAL:
+        frame = ICRS()
+    elif frame in [ 'ecliptic', 'e']:
+        raise ValueError("Ecliptic coordinate frame not yet supported by astropy")
+    return frame
 
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
@@ -62,14 +80,7 @@ def hp_celestial(hp_header):
     coordsys = hp_header.get('COORDSYS')
 
     if coordsys:
-        coordsys = coordsys.lower()
-        if coordsys in VALID_GALACTIC:
-            frame = Galactic()
-        elif coordsys in VALID_EQUATORIAL:
-            frame = ICRS()
-        elif coordsys in [ 'ecliptic', 'e']:
-            raise ValueError("Ecliptic coordinate frame not yet supported by astropy")
-        return frame
+        return equiv_celestial(coordsys)
     else:
         raise ValueError("No COORDSYS in header")
 
@@ -121,9 +132,9 @@ def build_ctype(coordsys, proj_type):
     if not proj_type in VALID_PROJ:
         raise ValueError('Unvupported projection')
 
-    if coordsys == 'galactic' or coordsys == 'g':
+    if coordsys in VALID_GALACTIC:
         return [ coord+proj_type for coord in ['GLON-', 'GLAT-']]
-    elif coordsys == 'equatorial' or coordsys == 'eq':
+    elif coordsys in VALID_EQUATORIAL:
         return [ coord+proj_type for coord in ['RA---', 'DEC--']]
     else:
         raise ValueError('Unsupported coordsys')
