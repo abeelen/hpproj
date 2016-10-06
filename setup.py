@@ -27,7 +27,7 @@ opts = dict(name="hpproj",
             tests_require=['pytest'],
 
             requires=['numpy', 'matplotlib', 'healpy', 'astropy',
-                      'photutils', 'wcsaxes' ],
+                      'photutils' ],
 )
 
 

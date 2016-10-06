@@ -8,10 +8,10 @@ import numpy as np
 import healpy as hp
 
 
-try: # prama: no cover
-    from wcsaxes import WCS # (deprecated)
-except ImportError: # pragma: no cover
-    from astropy.wcs import WCS
+# try: # prama: no cover
+#     from wcsaxes import WCS # (deprecated)
+# except ImportError: # pragma: no cover
+from astropy.wcs import WCS
 
 from astropy.io import fits
 from astropy.wcs import utils as wcs_utils
