@@ -1,5 +1,6 @@
-from .. import hp_celestial, hp_is_nest, build_ctype
+from .. import equiv_celestial, hp_celestial, hp_is_nest, build_ctype
 from .. import build_WCS, build_WCS_cube, build_WCS_2pts
+from .. import build_WCS_lonlat
 from .. import hp_to_wcs, hp_to_wcs_ipx
 from .. import hp_project, gen_hpmap, group_hpmap
 
@@ -12,28 +13,45 @@ from astropy.coordinates import ICRS, Galactic, SkyCoord, Angle
 from astropy.io import fits
 
 class TestHPCelestical:
-    def test_hp_celestial_exception(self):
-        hp_headers= [{},
+    def test_equiv_celestial_exception(self):
+        frames = ['ecliptic', 'Ecliptic', 'e', 'E']
+        for frame in frames:
+            with pytest.raises(ValueError):
+                result = equiv_celestial(frame)
+
+    def test_equiv_celestial(self):
+
+        frames = [('galactic', Galactic()),
+                  ('g', Galactic()),
+                  ('celestial2000', ICRS()),
+                  ('equatorial', ICRS()),
+                  ('eq', ICRS()),
+                  ('c', ICRS()),
+                  ('q', ICRS()),
+                  ('fk5', ICRS())]
+
+        for frame, result  in frames:
+            assert(result.is_equivalent_frame(equiv_celestial(frame)))
+
+    @pytest.mark.parametrize("hp_header", [{},
                      {'COORDSYS': 'ecliptic'},
                      {'COORDSYS': 'ECLIPTIC'},
                      {'COORDSYS': 'e'},
-                     {'COORDSYS': 'E'}, ]
-
-        for hp_header in hp_headers:
-            with pytest.raises(ValueError):
-                frame = hp_celestial(hp_header)
-
-    def test_hp_celestial(self):
-        hp_headers = [ ({'COORDSYS': 'G'}, Galactic()),
-                       ({'COORDSYS': 'Galactic'}, Galactic()),
-                       ({'COORDSYS': 'Equatorial'}, ICRS()),
-                       ({'COORDSYS': 'EQ'}, ICRS()),
-                       ({'COORDSYS': 'celestial2000'}, ICRS()),
-        ]
-
-        for hp_header, result in hp_headers:
+                     {'COORDSYS': 'E'}, ])
+    def test_hp_celestial_exception(self, hp_header):
+        with pytest.raises(ValueError):
             frame = hp_celestial(hp_header)
-            assert(frame.is_equivalent_frame(result))
+
+    @pytest.mark.parametrize("hp_header,result",
+                             [ ({'COORDSYS': 'G'}, Galactic()),
+                               ({'COORDSYS': 'Galactic'}, Galactic()),
+                               ({'COORDSYS': 'Equatorial'}, ICRS()),
+                               ({'COORDSYS': 'EQ'}, ICRS()),
+                               ({'COORDSYS': 'celestial2000'}, ICRS()),
+                             ])
+    def test_hp_celestial(self, hp_header, result):
+        frame = hp_celestial(hp_header)
+        assert(frame.is_equivalent_frame(result))
 
 class TestHPNest:
     def test_hp_is_nest_exception(self):
@@ -43,34 +61,32 @@ class TestHPNest:
             with pytest.raises(ValueError):
                 is_nest = hp_is_nest(hp_header)
 
-    def test_hp_is_nest(self):
-        hp_headers = [({'ORDERING': 'nested'}, True),
-                      ({'ORDERING': 'NESTED'}, True),
-                      ({'ORDERING': 'ring'}, False),
-        ]
-
-        for hp_header, result in hp_headers:
-            is_nest = hp_is_nest(hp_header)
-            assert(is_nest == result)
+    @pytest.mark.parametrize("hp_header, result",
+                             [ ({'ORDERING': 'nested'}, True),
+                               ({'ORDERING': 'NESTED'}, True),
+                               ({'ORDERING': 'ring'}, False),
+                             ])
+    def test_hp_is_nest(self, hp_header, result):
+        is_nest = hp_is_nest(hp_header)
+        assert(is_nest == result)
 
 class TestBuildCtype:
-    def test_build_ctype_exception(self):
-        tests = [('unknown', 'TAN'),
-                 ('G', 'BLA')]
-
-        for coordsys, proj_type in tests:
-            with pytest.raises(ValueError):
-                ctype = build_ctype(coordsys, proj_type)
-
-    def test_build_ctype(self):
-        tests = [ ( ('Galactic', 'TAN'), ['GLON-TAN', 'GLAT-TAN'] ),
-                  ( ('G', 'tan'), ['GLON-TAN', 'GLAT-TAN'] ),
-                  ( ('EQUATORIAL', 'SiN'), ['RA---SIN', 'DEC--SIN'] ),
-        ]
-
-        for (coordsys, proj_type), result in tests:
+    @pytest.mark.parametrize("coordsys, proj_type",
+                             [('unknown', 'TAN'),
+                              ('G', 'BLA')])
+    def test_build_ctype_exception(self, coordsys, proj_type):
+        with pytest.raises(ValueError):
             ctype = build_ctype(coordsys, proj_type)
-            assert(ctype == result)
+
+    @pytest.mark.parametrize("test, result",
+                             [ ( ('Galactic', 'TAN'), ['GLON-TAN', 'GLAT-TAN'] ),
+                               ( ('G', 'tan'), ['GLON-TAN', 'GLAT-TAN'] ),
+                               ( ('EQUATORIAL', 'SiN'), ['RA---SIN', 'DEC--SIN'] ),
+                             ])
+    def test_build_ctype(self, test, result):
+        coordsys, proj_type = test
+        ctype = build_ctype(coordsys, proj_type)
+        assert(ctype == result)
 
 class TestBuildWCS:
     def test_build_WCS_exception(self):
@@ -82,6 +98,8 @@ class TestBuildWCS:
                 build_WCS(SkyCoord(0,0, unit='deg'),proj_sys=proj_sys, proj_type=proj_type)
 
     def test_build_WCS(self):
+
+        #TODO: Parametrize
 
         coord, pixsize, shape_out = SkyCoord(0,0,unit='deg'), 1, [512, 1024]
         w = build_WCS(coord, pixsize, shape_out)
@@ -148,6 +166,15 @@ class TestBuildWCS:
         npt.assert_array_equal(w.wcs.cdelt, [-1,1,1])
         npt.assert_array_equal(w.wcs.crpix, [256,512, 1])
         npt.assert_array_equal(w.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
+
+    def test_decorator_lonlat(self):
+        lon, lat = 0, 0
+        coord, pixsize, shape_out = SkyCoord(lon,lat,unit='deg'), 1, [512, 1024]
+        w = build_WCS(coord, pixsize, shape_out)
+
+        w_lonlat = build_WCS_lonlat(lon, lat)
+        # Hum... something is wrong.... dont know why...
+        pass
 
 
 def test_build_WCS_2pts_exception():

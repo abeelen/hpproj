@@ -114,8 +114,10 @@ def test_CutSkySquare_init_exception():
     with pytest.raises(IOError):
         custky = CutSkySquare([('toto.fits', {})])
 
-def test_CutSkySquare_init(tmpdir):
-    toto = tmpdir.mkdir("conf").join("toto.fits")
+@pytest.fixture(scope='session')
+def generate_hpmap(tmpdir_factory):
+
+    """Generate an uniform healpix map"""
 
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside))
@@ -124,53 +126,54 @@ def test_CutSkySquare_init(tmpdir):
                'COORDSYS': 'C'}
     hp_key = "%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],  hp_celestial(hp_header).name)
 
-    hp.write_map(str(toto), hp_map, nest = hp_is_nest(hp_header), extra_header = hp_header.items())
-    cutsky = CutSkySquare([(str(toto), {'legend': 'toto'})], low_mem=True)
+    tmpfile = tmpdir_factory.mktemp("data").join("tmpfile.fits")
+
+    hp.write_map(str(tmpfile), hp_map, nest = hp_is_nest(hp_header), extra_header = hp_header.items())
+    return ([(str(tmpfile), {'legend': 'tmpfile'}) ], hp_map, hp_key)
+
+def test_CutSkySquare_init(generate_hpmap):
+
+    hp_map, hp_map_data, hp_key = generate_hpmap
+    filename, opt = hp_map[0]
+
+    cutsky = CutSkySquare(hp_map, low_mem=True)
     assert(cutsky.npix == DEFAULT_npix)
     assert(cutsky.pixsize == DEFAULT_pixsize)
     assert(cutsky.ctype == DEFAULT_ctype)
     assert(cutsky.maps.keys() == [hp_key])
-    assert(cutsky.maps[hp_key][0][0] == str(toto))
-    assert(cutsky.maps[hp_key][0][1] == str(toto))
-    assert(cutsky.maps[hp_key][0][2]['legend'] == 'toto')
+    assert(cutsky.maps[hp_key][0][0] == filename)
+    assert(cutsky.maps[hp_key][0][1] == filename)
+    assert(cutsky.maps[hp_key][0][2]['legend'] == opt['legend'])
 
-    cutsky = CutSkySquare([(str(toto), {'legend': 'toto', 'doContour': True})], low_mem=False)
-    npt.assert_array_equal(cutsky.maps[hp_key][0][1], hp_map)
+    hp_map[0][1]['doContour'] = True
+    cutsky = CutSkySquare(hp_map, low_mem=False)
+    npt.assert_array_equal(cutsky.maps[hp_key][0][1], hp_map_data)
     assert(cutsky.maps[hp_key][0][2]['doContour'] == True)
 
-def test_CutSkySquare_cutfits(tmpdir):
-    toto = tmpdir.mkdir("conf").join("toto.fits")
+def test_CutSkySquare_cutsky_fits(generate_hpmap):
 
-    nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside))
-    hp_header={'NSIDE': nside,
-               'ORDERING': 'RING',
-               'COORDSYS': 'C'}
-    hp_key = "%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],  hp_celestial(hp_header).name)
+    hp_map, hp_map_data, hp_key = generate_hpmap
+    filename, opt = hp_map[0]
+    hp_map[0][1]['doContour'] = True
 
-    hp.write_map(str(toto), hp_map, nest = hp_is_nest(hp_header), extra_header = hp_header.items())
-
-    cutsky = CutSkySquare([(str(toto), {'legend': 'toto', 'doContour': True})], low_mem=True)
+    cutsky = CutSkySquare(hp_map, low_mem=True)
     cut_fits = cutsky.cutsky_fits([0,0])
     assert(len(cut_fits) == 1)
-    assert(cut_fits[0]['legend'] == 'toto')
+    assert(cut_fits[0]['legend'] == opt['legend'])
     npt.assert_array_equal(cut_fits[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
     assert(cut_fits[0]['fits'].header['doContour'] == True)
 
-def test_CutSkySquare_cutpng(tmpdir):
+def test_CutSkySquare_cutsky_png(tmpdir):
     # Test for png : create empy plots ???...
     pass
+def test_CutSkySquare_cutsky_phot(tmpdir):
+    # Test for photometry
+    pass
 
-def test_cutsky(tmpdir):
-    toto = tmpdir.mkdir("conf").join("toto.fits")
+def test_cutsky(generate_hpmap):
 
-    nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside))
-    hp_header={'NSIDE': nside,
-               'ORDERING': 'RING',
-               'COORDSYS': 'C'}
-    hp_key = "%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],  hp_celestial(hp_header).name)
+    hp_map, hp_map_data, hp_key = generate_hpmap
+    filename, opt = hp_map[0]
+    old_hpmap = {opt['legend']: {'filename': filename}}
 
-    hp.write_map(str(toto), hp_map, nest = hp_is_nest(hp_header), extra_header = hp_header.items())
-
-    result = cutsky([0,0], maps=[(str(toto),{'legend': 'toto'})])
+    result = cutsky([0,0], maps=old_hpmap)
