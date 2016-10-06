@@ -1,5 +1,6 @@
 numpy
+matplotlib
 healpy
 astropy
+wcsaxes
 photutils
-matplotlib

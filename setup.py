@@ -5,6 +5,8 @@ except ImportError:
     from distutils.core import setup
 
 opts = dict(name="hpproj",
+            author='Alexandre Beelen',
+            author_email='alexandre.beelen@ias.u-psud.fr',
             maintainer="Marian Douspis",
             maintainer_email="marian.douspis@ias.u-psud.fr",
             description='Projection of Healpix maps onto a planar grid',
@@ -15,8 +17,6 @@ opts = dict(name="hpproj",
             classifiers=['Topic :: Scientific/Engineering :: Astronomy',
                          'Intended Audience :: Science/Research',
                          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)'],
-            author='Alexandre Beelen',
-            author_email='alexandre.beelen@ias.u-psud.fr',
             version='0.1',
             packages=['hpproj'],
             package_dir={'hpproj'  : 'hpproj'},
@@ -26,8 +26,8 @@ opts = dict(name="hpproj",
             setup_requires=['pytest-runner'],
             tests_require=['pytest'],
 
-            requires=['numpy', 'healpy', 'astropy',
-                      'photutils', 'matplotlib' ],
+            requires=['numpy', 'matplotlib', 'healpy', 'astropy',
+                      'photutils', 'wcsaxes' ],
 )
 
 
