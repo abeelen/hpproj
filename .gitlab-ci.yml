@@ -2,8 +2,9 @@ image: python:2.7
 
 before_script:
   - apt update
-  - apt install -y python-pip python-numpy python-pytest-cov python-matplotlib # python-astropy python-photutils python-healpy
-  - pip install astropy healpy photutils
+  - apt install -y python-pip python-pytest-cov # python-astropy python-photutils python-healpy
+  - apt build-dep python-matplotlib python-numpy
+  - pip install numpy astropy healpy photutils matplotlib
   
 stages:
   - test
