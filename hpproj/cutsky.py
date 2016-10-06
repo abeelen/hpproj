@@ -113,6 +113,11 @@ class CutSkySquare:
         # group them by map properties for efficiencies reasons
         self.maps = group_hpmap(hp_map)
 
+        # Save intermediate results
+        self.cut_fits = None
+        self.lonlat = [0,0]
+        self.coordframe = DEFAULT_coordframe
+
     def cutsky_fits(self,lonlat = [0, 0], coordframe = DEFAULT_coordframe):
         """Efficiently cut the healpix maps and return cutted fits file with proper header
 
@@ -166,6 +171,9 @@ class CutSkySquare:
 
                 cut_fits.append( {'legend': legend,
                                   'fits': fits.ImageHDU(patch, header)} )
+        self.lonlat = lonlat
+        self.coordframe = coordframe
+        self.cut_fits = cut_fits
 
         return cut_fits
 
@@ -188,8 +196,14 @@ class CutSkySquare:
 
         """
 
-        # Actual cutting
-        cut_fits = self.cutsky_fits(lonlat=lonlat, coordframe=coordframe)
+        if self.lonlat == lonlat and \
+           self.coordframe == coordframe and  \
+           self.cut_fits:
+            # Retrieve previously cut maps
+            cut_fits = self.cut_fits
+        else:
+            # Or cut the maps
+            cut_fits = self.cutsky_fits(lonlat=lonlat, coordframe=coordframe)
 
         # Common WCS for all cut maps
         w = WCS(cut_fits[0]['fits'])
@@ -242,6 +256,49 @@ class CutSkySquare:
             logger.debug(legend+ ' done')
 
         return cut_fits
+
+    def cutsky_phot(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe):
+        """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding photometry
+
+        Parameters
+        ----------
+        lonlat : array of 2 floats
+            the longitude and latitude of the center of projection [deg]
+        coordframe : str
+            the coordinate frame used for the position AND the projection
+
+        Returns
+        -------
+        list of dictionnaries
+            the dictionnary as two keys 'legend' (the opts{'legend'} see
+            __init()), 'fits' an ~astropy.io.fits.ImageHDU,
+            'phot', the corresponding photometrie
+
+        """
+
+        if self.lonlat == lonlat and \
+           self.coordframe == coordframe and  \
+           self.cut_fits:
+            # Retrieve previously cut maps
+            cut_fits = self.cut_fits
+        else:
+            # Or cut the maps
+            cut_fits = self.cutsky_fits(lonlat=lonlat, coordframe=coordframe)
+
+        positions = [(self.npix*1./2., self.npix*1./2) ]
+        apertures = CircularAperture(positions, r = 3./self.pixsize)
+
+        for cut_fit in cut_fits :
+            legend = cut_fit['legend']
+            logger.debug('phot on '+ legend)
+
+            patch = cut_fit['fits'].data
+            cut_fit['phot'] = aperture_photometry(patch-np.median(patch), apertures)
+
+            logger.debug(legend+ ' done')
+
+        return cut_fits
+
 
 def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_ctype, maps=None):
     """Old interface to cutsky -- Here for compability"""
@@ -565,7 +622,8 @@ def main(): # pragma: no cover
 
     CutThoseMaps = CutSkySquare(maps, npix=npix, pixsize=pixsize, ctype=ctype)
     results = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
-
+    results = CutThoseMaps.cutsky_phot(lonlat=[args.lon, args.lat], coordframe=coordframe)
+    print(results)
     # result = cutsky(lonlat=[args.lon, args.lat],
     #                 patch=[npix, pixsize], coordframe=coordframe,
     #                 ctype=ctype, maps=maps)
