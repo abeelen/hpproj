@@ -1,6 +1,7 @@
 image: python:2.7
 
 before_script:
+  - echo /etc/apt/sources.list | sed '/deb/deb-src/' >> /etc/apt/sources.list
   - apt-get update
   - apt-get install -y python-pip python-pytest-cov # python-astropy python-photutils python-healpy
   - apt-get build-dep -y python-matplotlib python-numpy
