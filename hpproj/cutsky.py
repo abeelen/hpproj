@@ -500,8 +500,7 @@ def combine_args(args, config):
     return npix, pixsize, coordframe, ctype, maps, output
 
 
-def main(): # pragma: no cover
-    # Mainly for test purpose
+def main():
 
     from base64 import b64decode
 
@@ -518,7 +517,7 @@ def main(): # pragma: no cover
     npix, pixsize, coordframe, ctype, maps, output = combine_args(args, config)
 
     CutThoseMaps = CutSkySquare(maps, npix=npix, pixsize=pixsize, ctype=ctype)
-    if ouput['fits']:
+    if output['fits']:
         results = CutThoseMaps.cutsky_fits(lonlat=[args.lon, args.lat], coordframe=coordframe)
     if output['png']:
         results = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
