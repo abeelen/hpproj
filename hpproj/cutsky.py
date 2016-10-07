@@ -482,8 +482,6 @@ def combine_args(args, config):
 def main(): # pragma: no cover
     # Mainly for test purpose
 
-    args = "0. 0. --mapfilenames hpproj/data/CMB_I_SMICA_128_R2.00.fits hpproj/data/HFI_SkyMap_353_256_R2.00_RING.fits  hpproj/data/HFI_SkyMap_857_128_R2.00_NEST.fits hpproj/data/HFI_SkyMap_100_128_R2.00_RING.fits  hpproj/data/HFI_SkyMap_545_128_R2.00_RING.fits --npix 256 --pixsize 2".split()
-
     from base64 import b64decode
 
     try:
@@ -500,12 +498,25 @@ def main(): # pragma: no cover
 
     CutThoseMaps = CutSkySquare(maps, npix=npix, pixsize=pixsize, ctype=ctype)
     results = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
+    results = CutThoseMaps.cutsky_phot(lonlat=[args.lon, args.lat], coordframe=coordframe)
 
     for result in results:
-        output = open(result['legend']+'.png', 'wb')
-        output.write(b64decode(result['png']))
-        output.close()
+        if 'fits' in result.keys():
+            try:
+                hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
+                hdulist.writeto(result['legend']+'.fits', clobber=True)
+            except NotImplementedError:
+                result['fits'].data = result['fits'].data.filled()
+                hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
+                hdulist.writeto(result['legend']+'.fits', clobber=True)
 
+        if 'png' in result.keys():
+            output = open(result['legend']+'.png', 'wb')
+            output.write(b64decode(result['png']))
+            output.close()
+
+        if 'phot' in result.keys():
+            result['phot'].write(result['legend']+'.xml', format='votable')
 
 if __name__ == '__main__':
     main()
