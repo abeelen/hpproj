@@ -1,0 +1,13 @@
+
+Version 0.2
+===========
+
+* CI
+* verbosity options
+* output options
+* several small bug fixes
+
+Version 0.1
+===========
+
+Initial version, basic output capabilities, no test suit
