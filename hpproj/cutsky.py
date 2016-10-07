@@ -144,7 +144,7 @@ class CutSkySquare:
 
         cut_fits = []
         for group in self.maps.keys():
-            logger.warning('projecting '+group)
+            logger.info('projecting '+group)
 
             maps = self.maps[group]
 
@@ -157,7 +157,7 @@ class CutSkySquare:
             mask, ipix = hp_to_wcs_ipx(hp_header, w, npix=self.npix)
 
             # Set up the figure, common for all healpix maps of this group
-            logger.warning('cutting maps')
+            logger.info('cutting maps')
 
             # Now the actual healpix map reading and projection
             for filename, iMap, iHeader in gen_hpmap(maps):
@@ -320,6 +320,7 @@ def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_c
 
     CutThoseMaps = CutSkySquare(new_maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
     result = CutThoseMaps.cutsky_png(lonlat=lonlat, coordframe=coordframe)
+    result = CutThoseMaps.cutsky_phot(lonlat=lonlat, coordframe=coordframe)
 
     return result
 
@@ -356,6 +357,10 @@ def parse_args(args):
     parser.add_argument('--mapfilenames', nargs='+', required=False,
                         help='Absolute path to the healpix maps')
 
+    verb = parser.add_mutually_exclusive_group()
+    verb.add_argument('--verbose', action='store_true', help='verbose mode')
+    verb.add_argument('--quiet', action='store_true', help='quiet mode')
+
     parser.add_argument('--conf', required=False,
                         help='Absolute path to a config file')
 
@@ -374,6 +379,14 @@ def parse_args(args):
                              parsed_args.mapfilenames ]
     else:
         parsed_args.maps = None
+
+    if parsed_args.verbose:
+        parsed_args.verbosity = logging.DEBUG
+    elif parsed_args.quiet:
+        parsed_args.verbosity = logging.ERROR
+    else:
+        parsed_args.verbosity = logging.INFO
+
 
     return parsed_args
 
@@ -406,6 +419,17 @@ def parse_config(conffile=None):
         options['coordframe'] = config.get('cutsky', 'coordframe')
     if config.has_option('cutsky', 'ctype'):
         options['ctype'] = config.get('cutsky', 'ctype')
+    if config.has_option('cutsky', 'verbosity'):
+        level = config.get('cutsky', 'verbosity').lower()
+        allowed_levels = { 'verbose': logging.DEBUG,
+                           'debug': logging.DEBUG,
+                           'quiet': logging.ERROR,
+                           'error': logging.ERROR,
+                           'info': logging.INFO}
+        if level in allowed_levels.keys():
+            options['verbosity'] = allowed_levels[level]
+        elif isinstance(level, int):
+            options['verbosity'] = level
 
     # Map list, only get the one which will be projected
     # Also check if contours are requested
@@ -437,6 +461,9 @@ def combine_args(args, config):
                  DEFAULT_coordframe
     ctype = args.ctype or config.get('ctype') or \
                  DEFAULT_ctype
+
+    verbosity = args.verbosity or config.get('verbosity') or logging.INFO
+    logger.setLevel(verbosity)
 
     # npix and radius are mutually exclusive, thus if radius is set we
     # need to compute npix
