@@ -222,6 +222,7 @@ def generate_hpmap(tmpdir_factory):
     hp.write_map(str(tmpfile), hp_map, nest = hp_is_nest(hp_header), extra_header = hp_header.items())
     return ([(str(tmpfile), {'legend': 'tmpfile'}) ], hp_map, hp_key)
 
+# TODO : what happen when file do not exist or are not healpix maps
 def test_CutSkySquare_init(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
