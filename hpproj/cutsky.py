@@ -358,8 +358,12 @@ def parse_args(args):
                         help='Absolute path to the healpix maps')
 
     verb = parser.add_mutually_exclusive_group()
-    verb.add_argument('--verbose', action='store_true', help='verbose mode')
-    verb.add_argument('--quiet', action='store_true', help='quiet mode')
+    verb.add_argument('-v','--verbose', action='store_true', help='verbose mode')
+    verb.add_argument('-q','--quiet', action='store_true', help='quiet mode')
+
+    parser.add_argument('--fits', action='store_true', help='output fits file')
+    parser.add_argument('--png', action='store_true', help='output png file')
+    parser.add_argument('--votable', action='store_true', help='output votable file')
 
     parser.add_argument('--conf', required=False,
                         help='Absolute path to a config file')
@@ -385,8 +389,7 @@ def parse_args(args):
     elif parsed_args.quiet:
         parsed_args.verbosity = logging.ERROR
     else:
-        parsed_args.verbosity = logging.INFO
-
+        parsed_args.verbosity = None
 
     return parsed_args
 
@@ -428,8 +431,21 @@ def parse_config(conffile=None):
                            'info': logging.INFO}
         if level in allowed_levels.keys():
             options['verbosity'] = allowed_levels[level]
-        elif isinstance(level, int):
-            options['verbosity'] = level
+        else:
+            try:
+                options['verbosity'] = int(level)
+            except ValueError:
+                options['verbosity'] = None
+
+
+    if config.has_option('cutsky', 'fits') and config.get('cutsky', 'fits'):
+        options['fits'] = True
+
+    if config.has_option('cutsky', 'png') and config.get('cutsky', 'png'):
+        options['png'] = True
+
+    if config.has_option('cutsky', 'votable') and config.get('cutsky', 'votable'):
+        options['votable'] = True
 
     # Map list, only get the one which will be projected
     # Also check if contours are requested
@@ -476,7 +492,12 @@ def combine_args(args, config):
     maps = args.maps or config.get('maps') or \
            None
 
-    return npix, pixsize, coordframe, ctype, maps
+    output = {}
+    output['fits'] = args.fits or config.get('fits') or False
+    output['png'] = args.png or config.get('png') or True
+    output['votable'] = args.votable or config.get('votable') or False
+
+    return npix, pixsize, coordframe, ctype, maps, output
 
 
 def main(): # pragma: no cover
@@ -494,14 +515,18 @@ def main(): # pragma: no cover
     except FileNotFoundError:
         config = {}
 
-    npix, pixsize, coordframe, ctype, maps = combine_args(args, config)
+    npix, pixsize, coordframe, ctype, maps, output = combine_args(args, config)
 
     CutThoseMaps = CutSkySquare(maps, npix=npix, pixsize=pixsize, ctype=ctype)
-    results = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
-    results = CutThoseMaps.cutsky_phot(lonlat=[args.lon, args.lat], coordframe=coordframe)
+    if ouput['fits']:
+        results = CutThoseMaps.cutsky_fits(lonlat=[args.lon, args.lat], coordframe=coordframe)
+    if output['png']:
+        results = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
+    if output['votable']:
+        results = CutThoseMaps.cutsky_phot(lonlat=[args.lon, args.lat], coordframe=coordframe)
 
     for result in results:
-        if 'fits' in result.keys():
+        if 'fits' in result.keys() and output['fits']:
             try:
                 hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
                 hdulist.writeto(result['legend']+'.fits', clobber=True)
@@ -510,12 +535,12 @@ def main(): # pragma: no cover
                 hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
                 hdulist.writeto(result['legend']+'.fits', clobber=True)
 
-        if 'png' in result.keys():
+        if 'png' in result.keys() and output['png']:
             output = open(result['legend']+'.png', 'wb')
             output.write(b64decode(result['png']))
             output.close()
 
-        if 'phot' in result.keys():
+        if 'phot' in result.keys() and output['votable'] :
             result['phot'].write(result['legend']+'.xml', format='votable')
 
 if __name__ == '__main__':

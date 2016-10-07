@@ -39,7 +39,14 @@ class TestParseArgs:
         assert(args.maps == None)
         assert(args.pixsize == None)
         assert(args.radius == None)
-        assert(args.verbosity == logging.INFO)
+
+        assert(args.verbose == False)
+        assert(args.quiet == False)
+        assert(args.verbosity == None)
+
+        assert(args.fits == False)
+        assert(args.png == False)
+        assert(args.votable == False)
 
     def test_parse_args_mapfilenames(self):
         args = parse_args('0.0 0.0 --mapfilenames blah1 blah2'.split())
@@ -49,7 +56,7 @@ class TestParseArgs:
                              ('blah2', {'legend': 'blah2'} ) ]  )
 
     @pytest.mark.parametrize("verbosity, level",
-                             [ ('', logging.INFO),
+                             [ ('', None),
                                ('--verbose', logging.DEBUG),
                                ('--quiet', logging.ERROR)
                              ] )
@@ -87,6 +94,9 @@ class TestParserConfig:
         assert(test_config.get('coordframe') == DEFAULT_coordframe)
         assert(test_config.get('ctype') == DEFAULT_ctype)
         assert(test_config.get('verbosity') == None)
+        assert(test_config.get('fits') == None)
+        assert(test_config.get('png') == None)
+        assert(test_config.get('votable') == None)
 
     def test_parser_config_maps(self, generate_default_conffile):
 
@@ -120,7 +130,10 @@ class TestParserConfig:
                                ('debug', logging.DEBUG),
                                ('quiet', logging.ERROR),
                                ('error', logging.ERROR),
-                               ('info', logging.INFO) ] )
+                               ('info', logging.INFO),
+                               (str(logging.INFO), logging.INFO),
+                               ('aze', None )
+                             ] )
     def test_parser_verbosity(self, generate_default_conffile, verbosity, level):
         conffile, config = generate_default_conffile
         config.set('cutsky', 'verbosity', verbosity)
@@ -129,10 +142,24 @@ class TestParserConfig:
 
         assert(test_config.get('verbosity') == level)
 
+    @pytest.mark.parametrize("key, value",
+                             [ ('fits', True),
+                               ('png', True),
+                               ('votable', True)
+                             ])
+    def test_parser_output(self, generate_default_conffile, key, value):
+        conffile, config = generate_default_conffile
+        config.set('cutsky', key, value)
+        config.write(conffile.open(mode='w', ensure=True))
+        test_config = parse_config(str(conffile))
+
+        assert(test_config.get(key) == value)
+
+
 class TestCombineArgs:
     def test_combine_args_defaults(self):
         args = parse_args('0.0 0.0 '.split())
-        (npix, pixsize, coordframe, ctype, maps) = combine_args(args, {})
+        (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, {})
 
         assert(npix == DEFAULT_npix)
         assert(coordframe == DEFAULT_coordframe)
@@ -140,20 +167,31 @@ class TestCombineArgs:
 
     def test_combine_args_radius(self):
         args = parse_args('0.0 0.0 --pixsize 1 --radius 60'.split())
-        (npix, pixsize, coordframe, ctype, maps) = combine_args(args, {})
+        (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, {})
         assert(pixsize == 1)
         assert(npix == 3600)
 
-    @pytest.mark.parametrize("args, conf, level",
+    @pytest.mark.parametrize("cmd, conf, level",
                              [('0.0 0.0 --verbose', {}, logging.DEBUG),
                               ('0.0 0.0 --quiet', {}, logging.ERROR),
-                              ('0.0.0.0', {'verbosity': logging.DEBUG}, logging.DEBUG),
-                              ('0.0.0.0 --quiet', {'verbosity': logging.DEBUG}, logging.ERROR)
+                              ('0.0 0.0', {'verbosity': logging.DEBUG}, logging.DEBUG),
+                              ('0.0 0.0 --quiet', {'verbosity': logging.DEBUG}, logging.ERROR)
                              ])
-    def test_combine_args_verbosity(self, args, conf, level):
-        args = parse_args('0.0 0.0 --verbose'.split())
-        (npix, pixsize, coordframe, ctype, maps) = combine_args(args, {})
-        assert(logger.level == logging.DEBUG)
+    def test_combine_args_verbosity(self, cmd, conf, level):
+        args = parse_args(cmd.split())
+        (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, conf)
+        assert(logger.level == level)
+
+    @pytest.mark.parametrize("cmd, conf, result",
+                             [('0.0 0.0 --png', {}, {'fits': False, 'png': True, 'votable': False}),
+                              ('0.0 0.0 --png --fits --votable', {}, {'fits': True, 'png': True, 'votable': True}),
+                              ('0.0 0.0 --png', {'fits': True}, {'fits': True, 'png': True, 'votable': False}),
+                             ])
+    def test_combine_args_output(self, cmd, conf, result):
+        args = parse_args(cmd.split())
+        (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, conf)
+        assert(output == result)
+
 
 def test_cutsky_exception():
     with pytest.raises(FileNotFoundError):
@@ -227,6 +265,6 @@ def test_cutsky(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
-    old_hpmap = {opt['legend']: {'filename': filename}}
+    old_hpmap = {opt['legend']: {'filename': filename, 'doContour': True}}
 
     result = cutsky([0,0], maps=old_hpmap)
