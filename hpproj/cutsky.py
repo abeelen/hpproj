@@ -327,6 +327,7 @@ def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_c
 
 def parse_args(args):
     """Parse arguments from the command line"""
+
     parser = argparse.ArgumentParser(description="Reproject the spherical sky onto a plane.")
     parser.add_argument('lon', type=float,
                         help='longitude of the projection [deg]')
@@ -362,7 +363,7 @@ def parse_args(args):
 
     out = parser.add_argument_group('output')
     out.add_argument('--fits', action='store_true', help='output fits file')
-    out.add_argument('--png', action='store_true', help='output png file')
+    out.add_argument('--png', action='store_true', help='output png file (Default: True if nothing else)')
     out.add_argument('--votable', action='store_true', help='output votable file')
     out.add_argument('--outdir', required=False, help='output directory (default:.)')
 
@@ -383,7 +384,7 @@ def parse_args(args):
     # file, we are loosing the doContour keyword but...
     if parsed_args.mapfilenames:
         parsed_args.maps = [ ( filename,
-                               dict( [('legend', os.path.basename(filename)) ]) )
+                               dict( [('legend', os.path.splitext(os.path.basename(filename))[0]) ]) )
                              for filename in
                              parsed_args.mapfilenames ]
     else:
@@ -499,19 +500,27 @@ def combine_args(args, config):
 
     output = {}
     output['fits'] = args.fits or config.get('fits') or False
-    output['png'] = args.png or config.get('png') or True
+    output['png'] = args.png or config.get('png') or False
     output['votable'] = args.votable or config.get('votable') or False
     output['outdir'] = args.outdir or config.get('outdir') or '.'
+
+    if not (output['fits'] or output['png'] or output['votable']):
+        output['png'] = True
 
     return npix, pixsize, coordframe, ctype, maps, output
 
 
-def main(): # pragma: no cover
+def main(argv = None):
+    """The main routine."""
+
+    if argv is None:
+        argv = sys.argv[1:]
+
 
     from base64 import b64decode
 
     try:
-        args = parse_args(sys.argv[1:])
+        args = parse_args(argv)
     except SystemExit:
         sys.exit()
 
@@ -541,12 +550,12 @@ def main(): # pragma: no cover
                 hdulist.writeto(os.path.join(output['outdir'],result['legend']+'.fits'), clobber=True)
 
         if 'png' in result.keys() and output['png']:
-            output = open(result['legend']+'.png', 'wb')
-            output.write(os.path.join(output['outdir'],b64decode(result['png'])))
+            output = open(os.path.join(output['outdir'],result['legend']+'.png'), 'wb')
+            output.write(b64decode(result['png']))
             output.close()
 
         if 'phot' in result.keys() and output['votable'] :
             result['phot'].write(os.path.join(output['outdir'],result['legend']+'.xml'), format='votable')
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

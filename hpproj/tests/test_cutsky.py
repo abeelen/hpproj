@@ -1,10 +1,11 @@
+import os
 import logging
 logger = logging.getLogger('django')
 
 import pytest
 
 from .. import parse_args, parse_config, combine_args
-from .. import cutsky, CutSkySquare
+from .. import CutSkySquare, cutsky, main
 from .. import DEFAULT_npix, DEFAULT_coordframe, DEFAULT_pixsize, DEFAULT_ctype
 
 import numpy as np
@@ -258,7 +259,8 @@ def test_CutSkySquare_cutsky_png(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
-    hp_map[0][1]['doContour'] = True # Will actually not produce a contour in this situation
+    hp_map[0][1]['doContour'] = True
+    # Will actually not produce a contour in this situation
 
     cutsky = CutSkySquare(hp_map, low_mem=True)
     result = cutsky.cutsky_png([0,0])
@@ -307,3 +309,37 @@ def test_cutsky(generate_hpmap):
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_npix, DEFAULT_npix)))
     assert(result[0]['fits'].header['doContour'] == True)
     assert(result[0]['phot'][0][0] == 0.0)
+
+def test_main(generate_hpmap):
+
+    hp_map, hp_map_data, hp_key = generate_hpmap
+    filename, opt = hp_map[0]
+
+    outdir = os.path.join(os.path.dirname(filename), 'output')
+    os.mkdir(outdir)
+
+    args = "0.0 0.0"+ \
+           " --mapfilenames "+ filename + \
+           " --outdir "+ outdir
+
+    exit_code = main(args.split())
+    assert(os.path.exists(os.path.join(outdir,opt['legend']+'.png')))
+    assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
+    assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+
+    args = "0.0 0.0"+ \
+           " --mapfilenames "+ filename + \
+           " --fits " + \
+           " --outdir "+ outdir
+
+    exit_code = main(args.split())
+    assert(os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
+    assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+
+    args = "0.0 0.0"+ \
+           " --mapfilenames "+ filename + \
+           " --fits --votable" + \
+           " --outdir "+ outdir
+
+    exit_code = main(args.split())
+    assert(os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
