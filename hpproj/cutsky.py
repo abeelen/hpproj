@@ -539,6 +539,9 @@ def main(argv = None):
     if output['votable']:
         results = CutThoseMaps.cutsky_phot(lonlat=[args.lon, args.lat], coordframe=coordframe)
 
+    if not os.path.isdir(output['outdir']):
+        os.makedirs(output['outdir'])
+
     for result in results:
         if 'fits' in result.keys() and output['fits']:
             try:

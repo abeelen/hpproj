@@ -316,7 +316,6 @@ def test_main(generate_hpmap):
     filename, opt = hp_map[0]
 
     outdir = os.path.join(os.path.dirname(filename), 'output')
-    os.mkdir(outdir)
 
     args = "0.0 0.0"+ \
            " --mapfilenames "+ filename + \
