@@ -145,7 +145,8 @@ class TestParserConfig:
     @pytest.mark.parametrize("key, value",
                              [ ('fits', True),
                                ('png', True),
-                               ('votable', True)
+                               ('votable', True),
+                               ('outdir', 'toto')
                              ])
     def test_parser_output(self, generate_default_conffile, key, value):
         conffile, config = generate_default_conffile
@@ -183,9 +184,9 @@ class TestCombineArgs:
         assert(logger.level == level)
 
     @pytest.mark.parametrize("cmd, conf, result",
-                             [('0.0 0.0 --png', {}, {'fits': False, 'png': True, 'votable': False}),
-                              ('0.0 0.0 --png --fits --votable', {}, {'fits': True, 'png': True, 'votable': True}),
-                              ('0.0 0.0 --png', {'fits': True}, {'fits': True, 'png': True, 'votable': False}),
+                             [('0.0 0.0 --png', {}, {'fits': False, 'png': True, 'votable': False, 'outdir': '.'}),
+                              ('0.0 0.0 --png --fits --votable', {}, {'fits': True, 'png': True, 'votable': True, 'outdir': '.'}),
+                              ('0.0 0.0 --png --outdir toto', {'fits': True}, {'fits': True, 'png': True, 'votable': False, 'outdir': 'toto'}),
                              ])
     def test_combine_args_output(self, cmd, conf, result):
         args = parse_args(cmd.split())
@@ -246,21 +247,53 @@ def test_CutSkySquare_cutsky_fits(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
+
+    cutsky = CutSkySquare(hp_map, low_mem=True)
+    result = cutsky.cutsky_fits([0,0])
+    assert(len(result) == 1)
+    assert(result[0]['legend'] == opt['legend'])
+    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
+
+def test_CutSkySquare_cutsky_png(generate_hpmap):
+
+    hp_map, hp_map_data, hp_key = generate_hpmap
+    filename, opt = hp_map[0]
+    hp_map[0][1]['doContour'] = True # Will actually not produce a contour in this situation
+
+    cutsky = CutSkySquare(hp_map, low_mem=True)
+    result = cutsky.cutsky_png([0,0])
+    assert(len(result) == 1)
+    assert(result[0]['legend'] == opt['legend'])
+    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
+    assert(result[0]['fits'].header['doContour'] == True)
+    # CHECK png .... ?
+
+    cutsky = CutSkySquare(hp_map, low_mem=True)
+    result2 = cutsky.cutsky_fits([0,0])
+    result2 = cutsky.cutsky_png([0,0])
+    assert(result[0]['legend'] == result2[0]['legend'])
+    npt.assert_array_equal(result[0]['fits'].data.data , result2[0]['fits'].data.data)
+    assert(result[0]['png'] == result2[0]['png'])
+
+def test_CutSkySquare_cutsky_phot(generate_hpmap):
+    hp_map, hp_map_data, hp_key = generate_hpmap
+    filename, opt = hp_map[0]
     hp_map[0][1]['doContour'] = True
 
     cutsky = CutSkySquare(hp_map, low_mem=True)
-    cut_fits = cutsky.cutsky_fits([0,0])
-    assert(len(cut_fits) == 1)
-    assert(cut_fits[0]['legend'] == opt['legend'])
-    npt.assert_array_equal(cut_fits[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
-    assert(cut_fits[0]['fits'].header['doContour'] == True)
+    result = cutsky.cutsky_phot([0,0])
+    assert(len(result) == 1)
+    assert(result[0]['legend'] == opt['legend'])
+    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
+    assert(result[0]['fits'].header['doContour'] == True)
+    assert(result[0]['phot'][0][0] == 0.0)
 
-def test_CutSkySquare_cutsky_png(tmpdir):
-    # Test for png : create empy plots ???...
-    pass
-def test_CutSkySquare_cutsky_phot(tmpdir):
-    # Test for photometry
-    pass
+    cutsky = CutSkySquare(hp_map, low_mem=True)
+    result2 = cutsky.cutsky_fits([0,0])
+    result2 = cutsky.cutsky_phot([0,0])
+    assert(result[0]['legend'] == result2[0]['legend'])
+    npt.assert_array_equal(result[0]['fits'].data.data , result2[0]['fits'].data.data)
+    assert(result[0]['phot'][0][0] == result2[0]['phot'][0][0])
 
 def test_cutsky(generate_hpmap):
 
@@ -269,3 +302,8 @@ def test_cutsky(generate_hpmap):
     old_hpmap = {opt['legend']: {'filename': filename, 'doContour': True}}
 
     result = cutsky([0,0], maps=old_hpmap)
+    assert(len(result) == 1)
+    assert(result[0]['legend'] == opt['legend'])
+    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_npix, DEFAULT_npix)))
+    assert(result[0]['fits'].header['doContour'] == True)
+    assert(result[0]['phot'][0][0] == 0.0)

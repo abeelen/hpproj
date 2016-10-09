@@ -42,7 +42,8 @@ try: # pragma: py3
 except NameError: # pragma: py2
     FileNotFoundError = IOError
 
-from .hp_helper import build_WCS, hp_to_wcs_ipx, VALID_PROJ
+from .hp_helper import build_WCS, hp_to_wcs_ipx
+from .hp_helper import VALID_PROJ, VALID_EQUATORIAL, VALID_GALACTIC
 from .hp_helper import equiv_celestial
 from .hp_helper import build_hpmap, group_hpmap, gen_hpmap
 
@@ -218,12 +219,12 @@ class CutSkySquare:
         proj_im = ax_wcs.imshow(patch, interpolation='none', origin='lower' )
         ax_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
 
-        if np.str(coordframe)=="EQUATORIAL":
+        if np.str(coordframe) in VALID_EQUATORIAL:
             ax_wcs.coords['ra'].set_ticks(color='white')
             ax_wcs.coords['dec'].set_ticks(color='white')
             ax_wcs.coords['ra'].set_axislabel(r'$\alpha_\mathrm{J2000}$')
             ax_wcs.coords['dec'].set_axislabel(r'$\delta_\mathrm{J2000}$')
-        elif np.str(coordframe)=="GALACTIC":
+        elif np.str(coordframe) in VALID_GALACTIC:
             ax_wcs.coords['glon'].set_ticks(color='red')
             ax_wcs.coords['glat'].set_ticks(color='red')
             ax_wcs.coords['glon'].set_axislabel(r'$l$')
@@ -357,16 +358,20 @@ def parse_args(args):
     parser.add_argument('--mapfilenames', nargs='+', required=False,
                         help='Absolute path to the healpix maps')
 
-    verb = parser.add_mutually_exclusive_group()
+
+
+    out = parser.add_argument_group('output')
+    out.add_argument('--fits', action='store_true', help='output fits file')
+    out.add_argument('--png', action='store_true', help='output png file')
+    out.add_argument('--votable', action='store_true', help='output votable file')
+    out.add_argument('--outdir', required=False, help='output directory (default:.)')
+
+    general = parser.add_argument_group('general')
+    verb = general.add_mutually_exclusive_group()
     verb.add_argument('-v','--verbose', action='store_true', help='verbose mode')
     verb.add_argument('-q','--quiet', action='store_true', help='quiet mode')
-
-    parser.add_argument('--fits', action='store_true', help='output fits file')
-    parser.add_argument('--png', action='store_true', help='output png file')
-    parser.add_argument('--votable', action='store_true', help='output votable file')
-
-    parser.add_argument('--conf', required=False,
-                        help='Absolute path to a config file')
+    general.add_argument('--conf', required=False,
+                         help='Absolute path to a config file')
 
 
 
@@ -440,12 +445,12 @@ def parse_config(conffile=None):
 
     if config.has_option('cutsky', 'fits') and config.get('cutsky', 'fits'):
         options['fits'] = True
-
     if config.has_option('cutsky', 'png') and config.get('cutsky', 'png'):
         options['png'] = True
-
     if config.has_option('cutsky', 'votable') and config.get('cutsky', 'votable'):
         options['votable'] = True
+    if config.has_option('cutsky', 'outdir'):
+        options['outdir'] = config.get('cutsky','outdir')
 
     # Map list, only get the one which will be projected
     # Also check if contours are requested
@@ -496,11 +501,12 @@ def combine_args(args, config):
     output['fits'] = args.fits or config.get('fits') or False
     output['png'] = args.png or config.get('png') or True
     output['votable'] = args.votable or config.get('votable') or False
+    output['outdir'] = args.outdir or config.get('outdir') or '.'
 
     return npix, pixsize, coordframe, ctype, maps, output
 
 
-def main():
+def main(): # pragma: no cover
 
     from base64 import b64decode
 
@@ -528,19 +534,19 @@ def main():
         if 'fits' in result.keys() and output['fits']:
             try:
                 hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
-                hdulist.writeto(result['legend']+'.fits', clobber=True)
+                hdulist.writeto(os.path.join(output['outdir'],result['legend']+'.fits'), clobber=True)
             except NotImplementedError:
                 result['fits'].data = result['fits'].data.filled()
                 hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
-                hdulist.writeto(result['legend']+'.fits', clobber=True)
+                hdulist.writeto(os.path.join(output['outdir'],result['legend']+'.fits'), clobber=True)
 
         if 'png' in result.keys() and output['png']:
             output = open(result['legend']+'.png', 'wb')
-            output.write(b64decode(result['png']))
+            output.write(os.path.join(output['outdir'],b64decode(result['png'])))
             output.close()
 
         if 'phot' in result.keys() and output['votable'] :
-            result['phot'].write(result['legend']+'.xml', format='votable')
+            result['phot'].write(os.path.join(output['outdir'],result['legend']+'.xml'), format='votable')
 
 if __name__ == '__main__':
     main()
