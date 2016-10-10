@@ -3,8 +3,11 @@ HealPixProjection
 
 |pypi| |build| |coverage|
 
-HealPixProjection is a project to allow easy and efficient projection of healpix maps onto planar grids.
+HealPixProjection is a project to allow easy and efficient projection of healpix maps onto planar grids. It can be used as a standalone program `cutsky` or as a standard library.
 
+.. code:: bash
+
+    cutsky 120.0 230.0
 
 .. |pypi| image:: https://img.shields.io/pypi/v/hpproj.svg?text=version
     :alt: Latest Version

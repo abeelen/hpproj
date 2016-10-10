@@ -40,10 +40,8 @@ def find_version(filepath):
     return version
 
 opts = dict(name="hpproj",
-            author='Alexandre Beelen',
+            author='Alexandre Beelen, Marian Douspis',
             author_email='alexandre.beelen@ias.u-psud.fr',
-            maintainer="Marian Douspis",
-            maintainer_email="marian.douspis@ias.u-psud.fr",
             description='Projection of Healpix maps onto a planar grid',
             long_description=open('README.rst').read(),
             url='https://git.ias.u-psud.fr/abeelen/hpproj',
@@ -68,7 +66,7 @@ opts = dict(name="hpproj",
                 'astropy>=1.2',
                 'healpy>=1.9',
                 'photutils>=0.2',
-                'wcsaxes>0.9'
+                'wcsaxes>=0.9'
             ],
 )
 
