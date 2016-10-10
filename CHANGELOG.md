@@ -1,12 +1,3 @@
-Version 0.3.1
-=============
-
-Fixed
------
-* wcsaxes in requirements
-* small license in all python file
-
-
 Version 0.3
 ===========
 
@@ -17,6 +8,8 @@ Added
 
 Fixed
 -----
+* wcsaxes in requirements
+* small license in all python file
 * Minor bugs
 
 Version 0.2.1
