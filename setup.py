@@ -1,33 +1,75 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 IAS / CNRS / Univ. Paris-Sud
+# LGPL License - see attached LICENSE file
+# Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
+
 import os
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
 
+def find_version(filepath):
+    """
+    Find project version in a given file
+
+    The syntax for the file version need to be in the form
+    __version__ = 'a.b.c'
+    which follows the semantic versioning http://semver.org/
+    * a : major version
+    * b : minor version
+    * c : patch version
+
+    Parameters
+    ----------
+    filepath: str
+        Path to the file containing a version number
+
+    Returns
+    -------
+    version: str
+        The program version in the form 'a.b.c' as described above
+
+    """
+    with open(filepath) as pfile:
+        for line in pfile.readlines():
+            if line.startswith('__version__'):
+                version = line.strip()[-6:-1]
+    return version
+
 opts = dict(name="hpproj",
             author='Alexandre Beelen',
             author_email='alexandre.beelen@ias.u-psud.fr',
-#            maintainer="Marian Douspis",
-#            maintainer_email="marian.douspis@ias.u-psud.fr",
+            maintainer="Marian Douspis",
+            maintainer_email="marian.douspis@ias.u-psud.fr",
             description='Projection of Healpix maps onto a planar grid',
-            long_description='Projection of Healpix maps onto a planar grid using wcs headers',
+            long_description=open('README.rst').read(),
             url='https://git.ias.u-psud.fr/abeelen/hpproj',
-            download_url='https://git.ias.u-psud.fr/abeelen/hpproj/repository/archive.tar.gz?0.3',
+            download_url='https://git.ias.u-psud.fr/abeelen/hpproj/repository/archive.tar.gz?'+find_version('hpproj/__init__.py'),
             license='LGPL-3.0+',
             classifiers=['Topic :: Scientific/Engineering :: Astronomy',
                          'Intended Audience :: Science/Research',
                          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)'],
-            version='0.3',
+            version=find_version('hpproj/__init__.py'),
             packages=['hpproj'],
             package_dir={'hpproj'  : 'hpproj'},
             entry_points = {
                 'console_scripts': [
                     'cutsky = hpproj.cutsky:main'] },
+
             setup_requires=['pytest-runner'],
             tests_require=['pytest'],
 
-            requires=['numpy', 'matplotlib', 'healpy', 'astropy',
-                      'photutils' ],
+            install_requires=[
+                'numpy>=1.11',
+                'matplotlib>=1.5',
+                'astropy>=1.2',
+                'healpy>=1.9',
+                'photutils>=0.2',
+                'wcsaxes>0.9'
+            ],
 )
 
 

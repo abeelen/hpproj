@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 IAS / CNRS / Univ. Paris-Sud
+# LGPL License - see attached LICENSE file
+# Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
+
 """
 Series of helper function to deal with healpix maps
 """
@@ -6,11 +13,6 @@ from __future__ import print_function, division
 
 import numpy as np
 import healpy as hp
-
-
-# try: # prama: no cover
-#     from wcsaxes import WCS # (deprecated)
-# except ImportError: # pragma: no cover
 from astropy.wcs import WCS
 
 from astropy.io import fits

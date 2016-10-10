@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 IAS / CNRS / Univ. Paris-Sud
+# LGPL License - see attached LICENSE file
+# Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
+
 from .. import equiv_celestial, hp_celestial, hp_is_nest, build_ctype
 from .. import build_WCS, build_WCS_cube, build_WCS_2pts
 from .. import build_WCS_lonlat
