@@ -6,4 +6,4 @@
 # Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
 
 from hpproj.hp_helper import *
-from hpproj.cut_sky import *
+from hpproj.cutsky import *
