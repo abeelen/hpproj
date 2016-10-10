@@ -3,11 +3,61 @@ HealPixProjection
 
 |pypi| |build| |coverage|
 
-HealPixProjection is a project to allow easy and efficient projection of healpix maps onto planar grids. It can be used as a standalone program `cutsky` or as a standard library.
+HealPixProjection is a project to allow easy and efficient projection of healpix maps onto planar grids. It can be used as a standalone program ``cutsky``
 
 .. code:: bash
 
-    cutsky 120.0 230.0
+    $ cutsky 0.0 0.0 --mapfilenames HFI_SkyMap_857_2048_R2.00_full.fits
+
+or as a python module
+
+.. code:: python
+
+    from hpproj import cutsky
+    result = cutsky([0.0, 0.0], maps={'Planck 857':
+                                      {'filename': 'HFI_SkyMap_857_2048_R2.00_full.fits'}
+                                      } )
+
+
+Features
+--------
+
+- Galactic and equatorial system supported
+- All projection system from ``wcslib``
+- Project several healpix maps at once, efficiently !
+- Output in ``fits``, ``png`` or ``votable`` for the central point source photometry
+
+Installation
+------------
+
+Install ``hpproj`` using pip :
+
+.. code:: bash
+
+    $ pip install hpproj
+
+or by running setuptools on `source <https://git.ias.u-psud.fr/abeelen/hpproj/tree/master>`_
+
+
+.. code:: bash
+
+    $ python setup.py install
+
+Contribute
+----------
+
+- `Issues Tracker <https://git.ias.u-psud.fr/abeelen/hpproj/issues>`_
+- `Source Code <https://git.ias.u-psud.fr/abeelen/hpproj/tree/master>`_
+
+Support
+-------
+
+If you are having issues, please let us know.
+
+License
+-------
+
+This project is licensed under the LGPL+3.0 license.
 
 .. |pypi| image:: https://img.shields.io/pypi/v/hpproj.svg?text=version
     :alt: Latest Version
