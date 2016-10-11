@@ -1,0 +1,3 @@
+[submodule "hpproj/doc"]
+	path = hpproj/doc
+	url = https://git.ias.u-psud.fr/abeelen/hpproj.wiki.git
