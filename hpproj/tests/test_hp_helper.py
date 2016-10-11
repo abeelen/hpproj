@@ -354,7 +354,7 @@ def test_gen_hpmap():
                'ORDERING': 'RING',
                'COORDSYS': 'C'}
 
-    maps = [ ('map'+str(i), hp_map*i, hp_header) for i in xrange(3)]
+    maps = [ ('map'+str(i), hp_map*i, hp_header) for i in range(3)]
 
     for i, (name, hp_map, hp_header) in enumerate(gen_hpmap(maps)):
         assert(name == 'map'+str(i))

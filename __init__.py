@@ -5,5 +5,4 @@
 # LGPL License - see attached LICENSE file
 # Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
 
-from hpproj.hp_helper import *
-from hpproj.cutsky import *
+from hpproj import *

@@ -317,10 +317,10 @@ def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_c
 
     # Transform the way we defined maps
     new_maps = []
-    for key in maps.iterkeys():
+    for key in iter(maps.keys()):
         filename = maps[key]['filename']
         opt = {'legend': key}
-        if maps[key].has_key('doContour'):
+        if 'doContour' in maps[key]:
             opt['doContour'] = maps[key]['doContour']
         new_maps.append((filename, opt))
 

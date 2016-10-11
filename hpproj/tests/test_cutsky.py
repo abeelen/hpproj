@@ -84,8 +84,8 @@ class TestParserConfig:
         conffile = tmpdir_factory.mktemp("conf").join("cutsky.cfg")
         config = ConfigParser()
         config.add_section('cutsky')
-        config.set('cutsky','npix', DEFAULT_npix)
-        config.set('cutsky','pixsize', DEFAULT_pixsize)
+        config.set('cutsky','npix', str(DEFAULT_npix))
+        config.set('cutsky','pixsize', str(DEFAULT_pixsize))
         config.set('cutsky','coordframe', DEFAULT_coordframe)
         config.set('cutsky','ctype', DEFAULT_ctype)
         config.write(conffile.open(mode='w', ensure=True))
@@ -114,13 +114,13 @@ class TestParserConfig:
         # 'map 1' should be present
         config.add_section('map 1')
         config.set('map 1', 'filename', 'filename1.fits')
-        config.set('map 1', 'doCut', True)
-        config.set('map 1', 'doContour', True)
+        config.set('map 1', 'doCut', str(True))
+        config.set('map 1', 'doContour', str(True))
 
         # 'map 2' should not be present
         config.add_section('map 2')
         config.set('map 2', 'filename', 'filename2.fits')
-        config.set('map 2', 'doCut', False)
+        config.set('map 2', 'doCut', str(False))
 
         # 'map 3' should not be present
         config.add_section('map 3')
@@ -158,7 +158,7 @@ class TestParserConfig:
                              ])
     def test_parser_output(self, generate_default_conffile, key, value):
         conffile, config = generate_default_conffile
-        config.set('cutsky', key, value)
+        config.set('cutsky', key, str(value))
         config.write(conffile.open(mode='w', ensure=True))
         test_config = parse_config(str(conffile))
 
@@ -241,7 +241,7 @@ def test_CutSkySquare_init(generate_hpmap):
     assert(cutsky.npix == DEFAULT_npix)
     assert(cutsky.pixsize == DEFAULT_pixsize)
     assert(cutsky.ctype == DEFAULT_ctype)
-    assert(cutsky.maps.keys() == [hp_key])
+    assert(list(cutsky.maps.keys()) == [hp_key])
     assert(cutsky.maps[hp_key][0][0] == filename)
     assert(cutsky.maps[hp_key][0][1] == filename)
     assert(cutsky.maps[hp_key][0][2]['legend'] == opt['legend'])
