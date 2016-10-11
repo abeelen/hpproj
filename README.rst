@@ -59,11 +59,11 @@ License
 
 This project is licensed under the LGPL+3.0 license.
 
-.. |pypi| image:: https://img.shields.io/pypi/v/hpproj.svg
+.. |pypi| image:: https://img.shields.io/pypi/v/hpproj.svg?maxAge=2592000
     :alt: Latest Version
     :target: https://pypi.python.org/pypi/hpproj
 
-.. |license| image:: https://img.shields.io/pypi/l/hpproj.svg
+.. |license| image:: https://img.shields.io/pypi/l/hpproj.svg?maxAge=2592000
     :alt: License
 
 .. |build| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/build.svg
