@@ -1,25 +1,26 @@
 #image: python:2.7
-image: debian:stretch
+#image: debian:stretch
+# before_script:
+# #  - cat /etc/apt/sources.list | sed 's/deb /deb-src /g' >> /etc/apt/sources.list
+#   - apt-get update
+# # Install needed python2 packages
+#   - apt-get install -y python-pip python-pytest-cov python-coverage
+#   - apt-get install -y python-numpy
+#   - apt-get install -y python-matplotlib
+#   - apt-get install -y python-astropy python-photutils python-healpy python-wcsaxes
+# # Install needed python2 packages
+#   - apt-get install -y python3-pip python3-pytest-cov python3-coverage
+#   - apt-get install -y python3-numpy
+#   - apt-get install -y python3-matplotlib
+#   - apt-get install -y python3-astropy python3-photutils python3-healpy python3-wcsaxes
 
-before_script:
-#  - cat /etc/apt/sources.list | sed 's/deb /deb-src /g' >> /etc/apt/sources.list
-  - apt-get update
-# Install needed python2 packages
-  - apt-get install -y python-pip python-pytest-cov python-coverage
-  - apt-get install -y python-numpy
-  - apt-get install -y python-matplotlib
-  - apt-get install -y python-astropy python-photutils python-healpy python-wcsaxes
-# Install needed python2 packages
-  - apt-get install -y python3-pip python3-pytest-cov python3-coverage
-  - apt-get install -y python3-numpy
-  - apt-get install -y python3-matplotlib
-  - apt-get install -y python3-astropy python3-photutils python3-healpy python3-wcsaxes
+# # Alternative preparation....
+# #  - apt-get build-dep -y python-numpy
+# #  - apt-get build-dep -y matplotlib
+# #  - pip install numpy astropy healpy photutils matplotlib
 
-# Alternative preparation....
-#  - apt-get build-dep -y python-numpy
-#  - apt-get build-dep -y matplotlib
-#  - pip install numpy astropy healpy photutils matplotlib
-  
+image: abeelen/pyastro
+
 stages:
   - test
 
