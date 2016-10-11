@@ -11,6 +11,15 @@ try:
 except ImportError:
     from distutils.core import setup
 
+from os import path
+
+here = path.abspath(path.dirname(__file__))
+
+# Get the long description from the README file
+with open(path.join(here, 'README.rst')) as f:
+    long_description = f.read()
+
+
 def find_version(filepath):
     """
     Find project version in a given file
@@ -43,7 +52,7 @@ opts = dict(name="hpproj",
             author='Alexandre Beelen, Marian Douspis',
             author_email='alexandre.beelen@ias.u-psud.fr',
             description='Projection of Healpix maps onto a planar grid',
-            long_description=open('README.rst').read(),
+            long_description=long_description,
             url='https://git.ias.u-psud.fr/abeelen/hpproj',
             download_url='https://git.ias.u-psud.fr/abeelen/hpproj/repository/archive.tar.gz?'+find_version('hpproj/__init__.py'),
             license='LGPL-3.0+',
