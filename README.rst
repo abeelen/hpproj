@@ -1,7 +1,7 @@
 HealPixProjection
 =================
 
-|pypi| |license| |build| |coverage|
+|pypi| |license| |wheels| |format| |pyversions| |build| |coverage|
 
 HealPixProjection is a project to allow easy and efficient projection of healpix maps onto planar grids. It can be used as a standalone program ``cutsky``
 
@@ -66,6 +66,16 @@ This project is licensed under the LGPL+3.0 license.
 .. |license| image:: https://img.shields.io/pypi/l/hpproj.svg?maxAge=2592000
     :alt: License
 
+.. |wheels| image:: https://img.shields.io/pypi/wheel/hpproj.svg?maxAge=2592000
+   :alt: Wheels
+
+.. |format| image:: https://img.shields.io/pypi/format/hpproj.svg?maxAge=2592000
+   :alt: Format
+      
+.. |pyversions| image:: https://img.shields.io/pypi/pyversions/hpproj.svg?maxAge=2592000
+   :alt: pyversions
+      
+				
 .. |build| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/build.svg
     :alt: Master Build
     :target: https://git.ias.u-psud.fr/abeelen/hpproj/builds

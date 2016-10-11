@@ -1,3 +1,11 @@
+master
+======
+
+Added
+-----
+* Full python 2 and python 3 compatibility
+* Basic README
+
 Version 0.3
 ===========
 
@@ -25,7 +33,7 @@ Version 0.2
 
 Added
 -----
-* CI
+* Ci
 * verbosity options
 * output options
 
@@ -38,4 +46,4 @@ Version 0.1
 
 Added
 -----
-* Initial version, basic output capabilities, no test suit
+* Initial version, basic output capabilities, no test sui
