@@ -85,3 +85,4 @@ This project is licensed under the LGPL+3.0 license.
     
 .. |rtd| image:: https://readthedocs.org/projects/hpproj/badge/?version=latest
     :alt: Read the doc
+    :target: http://hpproj.readthedocs.io/
