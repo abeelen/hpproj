@@ -1,3 +1,11 @@
+master
+======
+
+Added
+-----
+* doCut is now implicit to True in the config file
+* cutsky() now can use both old and new definition of maps
+
 Version 0.3.3
 =============
 

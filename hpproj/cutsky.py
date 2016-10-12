@@ -138,8 +138,9 @@ class CutSkySquare:
         Returns
         -------
         list of dictionnaries
-            the dictionnary as two keys 'legend' (the opts{'legend'} see
-            __init()) and 'fits' an ~astropy.io.fits.ImageHDU
+            the dictionnary has 2 keys :
+            * 'legend' (the opts{'legend'} see __init())
+            * 'fits' an ~astropy.io.fits.ImageHDU
         """
 
         # Center of projection
@@ -197,10 +198,10 @@ class CutSkySquare:
         Returns
         -------
         list of dictionnaries
-            the dictionnary as two keys 'legend' (the opts{'legend'} see
-            __init()), 'fits' an ~astropy.io.fits.ImageHDU,
-            'png', a b61encoded png image of the fits
-
+            the dictionnary has 3 keys :
+            * 'legend' (the opts{'legend'} see __init()),
+            * 'fits' an ~astropy.io.fits.ImageHDU,
+            * 'png', a b61encoded png image of the fits
         """
 
         if self.lonlat == lonlat and \
@@ -277,10 +278,10 @@ class CutSkySquare:
         Returns
         -------
         list of dictionnaries
-            the dictionnary as two keys 'legend' (the opts{'legend'} see
-            __init()), 'fits' an ~astropy.io.fits.ImageHDU,
-            'phot', the corresponding photometry
-
+            the dictionnary has 3 keys :
+            * 'legend' (the opts{'legend'} see __init()),
+            * 'fits' an ~astropy.io.fits.ImageHDU,
+            * 'phot', the corresponding photometry
         """
 
         if self.lonlat == lonlat and \
@@ -306,16 +307,29 @@ class CutSkySquare:
 
         return cut_fits
 
+def to_new_maps(maps):
+    """Transform old dictionnary type healpix map list used by cutsky to
+    list of tuple used by CutSkySquare
 
-def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_ctype, maps=None):
-    """Old interface to cutsky -- Here for compability"""
+    Parameters
+    ----------
+    maps : dict
+        a dictionnary with key being the legend of the image :
+        {legend: {'filename': full_filename_to_healpix_map.fits,
+                    'doContour': True }, # optionnal
+         ... }
+
+    Returns
+    -------
+    a list of tuple following the new convention:
+    [(full_filename_to_healpix_map.fits, {'legend': legend,
+                                          'doContour': True}), # optionnal
+     ... ]
+
+    """
 
     warnings.warn("deprecated", DeprecationWarning)
 
-    if not maps:
-        raise FileNotFoundError("No healpix map to project")
-
-    # Transform the way we defined maps
     new_maps = []
     for key in iter(maps.keys()):
         filename = maps[key]['filename']
@@ -324,7 +338,57 @@ def cutsky(lonlat=[0, 0], patch=[256, 1], coordframe='galactic', ctype=DEFAULT_c
             opt['doContour'] = maps[key]['doContour']
         new_maps.append((filename, opt))
 
-    CutThoseMaps = CutSkySquare(new_maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
+    return new_maps
+
+def cutsky(lonlat=None, maps=None, patch=[256, 1], coordframe='galactic', ctype=DEFAULT_ctype):
+    """Old interface to cutsky -- Here mostly for compability
+
+    Parameters
+    ----------
+    lonlat : array of 2 floats
+        the longitude and latitude of the center of projection [deg]
+    maps: a dict or a list
+        either a dictionnary (old interface) or a list of tuple (new
+        interface) :
+
+        {legend: {'filename': full_filename_to_healpix_map.fits,
+                  'doContour': True }, # optionnal
+         ... }
+
+        or
+
+        [(full_filename_to_healpix_map.fits, {'legend': legend,
+                                              'doContour': True}), # optionnal
+         ... ]
+    patch : array of [int, float]
+        [int] the number of pixels and
+        [float] the size of the pixel [arcmin]
+    coordframe : str
+        the coordinate frame used for the position AND the projection
+    ctype: str
+        a valid projection type (default: TAN)
+
+    Returns
+    -------
+    list of dictionnaries
+        the dictionnary has 4 keys :
+        * 'legend' (see maps above),
+        * 'fits' an ~astropy.io.fits.ImageHDU,
+        * 'png', a b61encoded png image of the fits
+        * 'phot', the corresponding photometry
+
+    """
+
+    if not lonlat:
+        raise ValueError("You must provide a lonlat argument")
+
+    if not maps:
+        raise FileNotFoundError("No healpix map to project")
+
+    if isinstance(maps, dict):
+        maps = to_new_maps(maps)
+
+    CutThoseMaps = CutSkySquare(maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
     result = CutThoseMaps.cutsky_png(lonlat=lonlat, coordframe=coordframe)
     result = CutThoseMaps.cutsky_phot(lonlat=lonlat, coordframe=coordframe)
 
@@ -519,15 +583,14 @@ def combine_args(args, config):
 def main(argv = None):
     """The main routine."""
 
-    if argv is None:
+    if argv is None: # pragma: no cover
         argv = sys.argv[1:]
-
 
     from base64 import b64decode
 
     try:
         args = parse_args(argv)
-    except SystemExit:
+    except SystemExit: # pragma: no cover
         sys.exit()
 
     try:

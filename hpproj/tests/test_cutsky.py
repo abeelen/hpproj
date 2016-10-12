@@ -12,7 +12,7 @@ logger = logging.getLogger('django')
 import pytest
 
 from .. import parse_args, parse_config, combine_args
-from .. import CutSkySquare, cutsky, main
+from .. import CutSkySquare, cutsky, main, to_new_maps
 from .. import DEFAULT_npix, DEFAULT_coordframe, DEFAULT_pixsize, DEFAULT_ctype
 
 import numpy as np
@@ -205,11 +205,6 @@ class TestCombineArgs:
         assert(output == result)
 
 
-def test_cutsky_exception():
-    with pytest.raises(FileNotFoundError):
-        sub_map = cutsky()
-
-
 def test_CutSkySquare_init_exception():
     with pytest.raises(TypeError):
         cutsky = CutSkySquare()
@@ -307,48 +302,66 @@ def test_CutSkySquare_cutsky_phot(generate_hpmap):
     npt.assert_array_equal(result[0]['fits'].data.data , result2[0]['fits'].data.data)
     assert(result[0]['phot'][0][0] == result2[0]['phot'][0][0])
 
-def test_cutsky(generate_hpmap):
+class TestCutSky:
 
-    hp_map, hp_map_data, hp_key = generate_hpmap
-    filename, opt = hp_map[0]
-    old_hpmap = {opt['legend']: {'filename': filename, 'doContour': True}}
+    def test_to_new_maps(self):
+        old_maps = {'legend': {'filename': 'full_filename_to_healpix_map.fits',
+                               'doContour': True } }
 
-    result = cutsky([0,0], maps=old_hpmap)
-    assert(len(result) == 1)
-    assert(result[0]['legend'] == opt['legend'])
-    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_npix, DEFAULT_npix)))
-    assert(result[0]['fits'].header['doContour'] == True)
-    assert(result[0]['phot'][0][0] == 0.0)
+        new_maps = to_new_maps(old_maps)
+        assert(len(new_maps) == 1)
+        assert(isinstance(new_maps[0], tuple))
+        assert(new_maps[0][0] == old_maps['legend']['filename'])
+        assert(new_maps[0][1] == {'legend': 'legend', 'doContour': True})
 
-def test_main(generate_hpmap):
+    def test_cutsky_exception(self):
+        with pytest.raises(ValueError):
+            sub_map = cutsky()
+        with pytest.raises(FileNotFoundError):
+            sub_map = cutsky(lonlat=[0,0])
 
-    hp_map, hp_map_data, hp_key = generate_hpmap
-    filename, opt = hp_map[0]
+    def test_cutsky(self,generate_hpmap):
 
-    outdir = os.path.join(os.path.dirname(filename), 'output')
+        hp_map, hp_map_data, hp_key = generate_hpmap
+        filename, opt = hp_map[0]
+        old_hpmap = {opt['legend']: {'filename': filename, 'doContour': True}}
 
-    args = "0.0 0.0"+ \
-           " --mapfilenames "+ filename + \
-           " --outdir "+ outdir
+        result = cutsky([0,0], old_hpmap)
+        assert(len(result) == 1)
+        assert(result[0]['legend'] == opt['legend'])
+        npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_npix, DEFAULT_npix)))
+        assert(result[0]['fits'].header['doContour'] == True)
+        assert(result[0]['phot'][0][0] == 0.0)
 
-    exit_code = main(args.split())
-    assert(os.path.exists(os.path.join(outdir,opt['legend']+'.png')))
-    assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
-    assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+    def test_main(self,generate_hpmap):
 
-    args = "0.0 0.0"+ \
-           " --mapfilenames "+ filename + \
-           " --fits " + \
-           " --outdir "+ outdir
+        hp_map, hp_map_data, hp_key = generate_hpmap
+        filename, opt = hp_map[0]
 
-    exit_code = main(args.split())
-    assert(os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
-    assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+        outdir = os.path.join(os.path.dirname(filename), 'output')
 
-    args = "0.0 0.0"+ \
-           " --mapfilenames "+ filename + \
-           " --fits --votable" + \
-           " --outdir "+ outdir
+        args = "0.0 0.0"+ \
+               " --mapfilenames "+ filename + \
+               " --outdir "+ outdir
 
-    exit_code = main(args.split())
-    assert(os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+        exit_code = main(args.split())
+        assert(os.path.exists(os.path.join(outdir,opt['legend']+'.png')))
+        assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
+        assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+
+        args = "0.0 0.0"+ \
+               " --mapfilenames "+ filename + \
+               " --fits " + \
+               " --outdir "+ outdir
+
+        exit_code = main(args.split())
+        assert(os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
+        assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+
+        args = "0.0 0.0"+ \
+               " --mapfilenames "+ filename + \
+               " --fits --votable" + \
+               " --outdir "+ outdir
+
+        exit_code = main(args.split())
+        assert(os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
