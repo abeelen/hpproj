@@ -124,14 +124,17 @@ class TestParserConfig:
 
         # 'map 3' should not be present
         config.add_section('map 3')
-        config.set('map 3', 'filename', 'filename2.fits')
+        config.set('map 3', 'filename', 'filename3.fits')
         config.write(conffile.open(mode='w', ensure=True))
 
         test_config = parse_config(str(conffile))
 
         assert(test_config.get('maps') == [('filename1.fits',
                                             { 'legend': 'map 1',
-                                              'doContour':True} ) ] )
+                                              'doContour':True} ),
+                                           ('filename3.fits',
+                                            {'legend': 'map 3'} )
+        ] )
 
     @pytest.mark.parametrize("verbosity, level",
                              [ ('verbose', logging.DEBUG),

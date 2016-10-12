@@ -361,29 +361,27 @@ def parse_args(args):
                          (default:TAN)',
                         choices=VALID_PROJ)
 
-    parser.add_argument('--mapfilenames', nargs='+', required=False,
-                        help='Absolute path to the healpix maps')
+    input_map = parser.add_argument_group('input maps', description="one of the two options must be present")
 
-
+    input_map.add_argument('--mapfilenames', nargs='+', required=False,
+                        help='absolute path to the healpix maps')
+    input_map.add_argument('--conf', required=False,
+                         help='absolute path to a config file')
 
     out = parser.add_argument_group('output')
     out.add_argument('--fits', action='store_true', help='output fits file')
     out.add_argument('--png', action='store_true', help='output png file (Default: True if nothing else)')
     out.add_argument('--votable', action='store_true', help='output votable file')
-    out.add_argument('--outdir', required=False, help='output directory (default:.)')
+    out.add_argument('--outdir', required=False, help='output directory (default:".")')
 
     general = parser.add_argument_group('general')
     verb = general.add_mutually_exclusive_group()
     verb.add_argument('-v','--verbose', action='store_true', help='verbose mode')
     verb.add_argument('-q','--quiet', action='store_true', help='quiet mode')
-    general.add_argument('--conf', required=False,
-                         help='Absolute path to a config file')
-
 
 
     # Do the actual parsing
     parsed_args = parser.parse_args(args)
-    #parsed_args = parser.parse_args('0 0'.split())
 
     # Put the list of filenames into the same structure as the config
     # file, we are loosing the doContour keyword but...
@@ -463,10 +461,13 @@ def parse_config(conffile=None):
     mapsToCut = []
     for section in config.sections():
         if section != 'cutsky':
-            if config.has_option(section, 'doCut') and config.has_option(section, 'filename'):
-                if config.getboolean(section, 'doCut'):
-                    filename = config.get(section, 'filename')
+            if config.has_option(section,'filename'):
+                filename = config.get(section, 'filename')
+                # doCut options set to True if not present
+                if ( config.has_option(section, 'doCut') and config.getboolean(section,'doCut')) or \
+                   ( not config.has_option(section, 'doCut') ):
                     opt = {'legend': section}
+
                     if config.has_option(section, 'doContour'):
                         opt['doContour'] = config.getboolean(section, 'doContour')
                     mapsToCut.append((filename, opt))
