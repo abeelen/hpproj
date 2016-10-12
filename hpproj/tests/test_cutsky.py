@@ -125,8 +125,8 @@ class TestParserConfig:
         # 'map 3' should not be present
         config.add_section('map 3')
         config.set('map 3', 'filename', 'filename3.fits')
-        config.write(conffile.open(mode='w', ensure=True))
 
+        config.write(conffile.open(mode='w', ensure=True))
         test_config = parse_config(str(conffile))
 
         assert(test_config.get('maps') == [('filename1.fits',
@@ -135,6 +135,18 @@ class TestParserConfig:
                                            ('filename3.fits',
                                             {'legend': 'map 3'} )
         ] )
+
+    def test_parser_config_maps_interpolation(self, generate_default_conffile):
+        conffile, config = generate_default_conffile
+
+        config.set('cutsky', 'mapdir', 'toto')
+        config.add_section('map 4')
+        config.set('map 4', 'filename', '${cutsky:mapdir}/filename4.fits')
+
+        config.write(conffile.open(mode='w', ensure=True))
+        test_config = parse_config(str(conffile))
+
+        assert(test_config.get('maps')[2] == ('toto/filename4.fits', {'legend': 'map 4'}))
 
     @pytest.mark.parametrize("verbosity, level",
                              [ ('verbose', logging.DEBUG),

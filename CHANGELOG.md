@@ -1,3 +1,10 @@
+master
+======
+
+Added
+-----
+* ExtendedInterpolation for configparser for py3, only for filename in py2
+
 Version 0.4.0
 =============
 

@@ -31,9 +31,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 try: # pragma: py3
-    from configparser import ConfigParser
+    from configparser import ConfigParser, ExtendedInterpolation
+    pattern = None
 except ImportError: # pragma: py2
+    import re
     from ConfigParser import ConfigParser
+    pattern = re.compile(r"\$\{(.*?)\}")
 
 try: # pragma: py3
     from io import BytesIO
@@ -491,7 +494,14 @@ def parse_args(args):
 
 def parse_config(conffile=None):
     """Parse options from a configuration file."""
-    config = ConfigParser()
+
+    if pattern: #pragma: py2
+       config = ConfigParser()
+       def rep_key(m):
+           section, key = re.split(':',m.group(1))
+           return config.get(section,key)
+    else: #pragma: py3
+       config = ConfigParser(interpolation=ExtendedInterpolation())
 
     # Look for cutsky.cfg at several locations
     conffiles = [ os.path.join(directory, 'cutsky.cfg') for directory
@@ -549,6 +559,8 @@ def parse_config(conffile=None):
         if section != 'cutsky':
             if config.has_option(section,'filename'):
                 filename = config.get(section, 'filename')
+                if pattern: #pragma: v2
+                    filename = pattern.sub(rep_key, filename)
                 # doCut options set to True if not present
                 if ( config.has_option(section, 'doCut') and config.getboolean(section,'doCut')) or \
                    ( not config.has_option(section, 'doCut') ):
