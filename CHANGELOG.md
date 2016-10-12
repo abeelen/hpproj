@@ -1,11 +1,11 @@
-master
-======
+Version 0.4.0
+=============
 
 Added
 -----
 * doCut is now implicit to True in the config file
 * cutsky() now can use both old and new definition of maps
-* usage documentation
+* rtd pages
 
 Fixed
 -----
