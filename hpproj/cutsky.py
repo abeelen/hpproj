@@ -57,9 +57,9 @@ DEFAULT_pixsize = 1
 DEFAULT_coordframe = 'galactic'
 DEFAULT_ctype = 'TAN'
 
-class CutSkySquare:
+class CutSky(object):
     """
-    Container for Healpix maps and cutsky methods
+    Container for Healpix maps and cut_* methods
 
     ...
 
@@ -76,12 +76,13 @@ class CutSkySquare:
 
 
     """
-    def __init__(self, maps, npix=DEFAULT_npix, pixsize=DEFAULT_pixsize, ctype=DEFAULT_ctype, low_mem=True):
-        """Initialization of a CutSkySquare class
+
+    def __init__(self, maps=None, npix=DEFAULT_npix, pixsize=DEFAULT_pixsize, ctype=DEFAULT_ctype, low_mem=True):
+        """Initialization of a CutSky class
 
         Parameters
         ----------
-        maps : list of tuple
+        maps : list of tuple or dictionary
             list of tuple (filename, {opt}) where filename is the full
             path to the healpix map and {opt} is a dictionnary with
             "optional" header for the file (see Notes).
@@ -97,13 +98,30 @@ class CutSkySquare:
 
         Notes
         -----
-
+        The list of dictionnary describe the maps to be projected :
+        ```
+        [(full_filename_to_healpix_map.fits, {'legend': legend,
+                                              'doContour': True}), # optionnal
+          ... ]
+        ```
         The {opt} dictionnary MUST containt, at least, the key
         'legend' which will be used to uniquely identify the cutted
         map, other possible keys 'doContour' with a boolean value to
         contour the map latter one
 
+        Alternatively one can use the old interface as a dictionnary :
+        ```
+        {legend: {'filename': full_filename_to_healpix_map.fits,
+                    'doContour': True }, # optionnal
+         ... }
+        ```
         """
+
+        if maps is None:
+            raise FileNotFoundError("No healpix map to project")
+
+        if isinstance(maps, dict):
+            maps = to_new_maps(maps)
 
         # Define the basic parameters for the output maps
         self.npix = npix
@@ -121,11 +139,11 @@ class CutSkySquare:
         self.maps = group_hpmap(hp_map)
 
         # Save intermediate results
-        self.cut_fits = None
-        self.lonlat = [0,0]
+        self.cuts = None
+        self.lonlat = None
         self.coordframe = DEFAULT_coordframe
 
-    def cutsky_fits(self,lonlat = [0, 0], coordframe = DEFAULT_coordframe):
+    def cut_fits(self,lonlat = [0, 0], coordframe = DEFAULT_coordframe):
         """Efficiently cut the healpix maps and return cutted fits file with proper header
 
         Parameters
@@ -149,7 +167,7 @@ class CutSkySquare:
         # Build the target WCS header
         w = build_WCS(coord_in, pixsize=self.pixsize/60., npix=self.npix, proj_sys=coordframe, proj_type=self.ctype)
 
-        cut_fits = []
+        cuts = []
         for group in self.maps.keys():
             logger.info('projecting '+group)
 
@@ -177,15 +195,15 @@ class CutSkySquare:
                 if 'doContour' in iHeader.keys():
                     header.append(('doContour', iHeader['doContour']))
 
-                cut_fits.append( {'legend': legend,
-                                  'fits': fits.ImageHDU(patch, header)} )
+                cuts.append( {'legend': legend,
+                              'fits': fits.ImageHDU(patch, header)} )
         self.lonlat = lonlat
         self.coordframe = coordframe
-        self.cut_fits = cut_fits
+        self.cuts = cuts
 
-        return cut_fits
+        return cuts
 
-    def cutsky_png(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe):
+    def cut_png(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding png
 
         Parameters
@@ -206,15 +224,15 @@ class CutSkySquare:
 
         if self.lonlat == lonlat and \
            self.coordframe == coordframe and  \
-           self.cut_fits:
+           self.cuts:
             # Retrieve previously cut maps
-            cut_fits = self.cut_fits
+            cuts = self.cuts
         else:
             # Or cut the maps
-            cut_fits = self.cutsky_fits(lonlat=lonlat, coordframe=coordframe)
+            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe)
 
         # Common WCS for all cut maps
-        w = WCS(cut_fits[0]['fits'])
+        w = WCS(cuts[0]['fits'])
 
         # Plotting
         patch = np.zeros((self.npix, self.npix))
@@ -236,13 +254,13 @@ class CutSkySquare:
             ax_wcs.coords['glon'].set_axislabel(r'$l$')
             ax_wcs.coords['glat'].set_axislabel(r'$b$')
 
-        for cut_fit in cut_fits :
+        for cut in cuts :
 
-            legend = cut_fit['legend']
+            legend = cut['legend']
             logger.debug('plotting '+ legend)
 
-            patch = cut_fit['fits'].data
-            patch_header = cut_fit['fits'].header
+            patch = cut['fits'].data
+            patch_header = cut['fits'].header
 
             proj_im.set_data(patch)
             proj_im.set_clim(vmin=patch.min(), vmax=patch.max())
@@ -257,15 +275,15 @@ class CutSkySquare:
 
             logger.debug('saving '+legend)
 
-            # Add the map to the cut_fit dictionnary
+            # Add the map to the cut dictionnary
             output_map = BytesIO()
             plt.savefig(output_map,bbox_inches='tight', format='png',dpi=75, frameon=False)
-            cut_fit['png'] = b64encode(output_map.getvalue()).strip()
+            cut['png'] = b64encode(output_map.getvalue()).strip()
             logger.debug(legend+ ' done')
 
-        return cut_fits
+        return cuts
 
-    def cutsky_phot(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe):
+    def cut_phot(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding photometry
 
         Parameters
@@ -286,46 +304,49 @@ class CutSkySquare:
 
         if self.lonlat == lonlat and \
            self.coordframe == coordframe and  \
-           self.cut_fits:
+           self.cuts:
             # Retrieve previously cut maps
-            cut_fits = self.cut_fits
+            cuts = self.cuts
         else:
             # Or cut the maps
-            cut_fits = self.cutsky_fits(lonlat=lonlat, coordframe=coordframe)
+            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe)
 
         positions = [(self.npix*1./2., self.npix*1./2) ]
         apertures = CircularAperture(positions, r = 3./self.pixsize)
 
-        for cut_fit in cut_fits :
-            legend = cut_fit['legend']
+        for cut in cuts :
+            legend = cut['legend']
             logger.debug('phot on '+ legend)
 
-            patch = cut_fit['fits'].data
-            cut_fit['phot'] = aperture_photometry(patch-np.median(patch), apertures)
+            patch = cut['fits'].data
+            cut['phot'] = aperture_photometry(patch-np.median(patch), apertures)
 
             logger.debug(legend+ ' done')
 
-        return cut_fits
+        return cuts
 
 def to_new_maps(maps):
     """Transform old dictionnary type healpix map list used by cutsky to
-    list of tuple used by CutSkySquare
+    list of tuple used by Cutsky
 
     Parameters
     ----------
     maps : dict
         a dictionnary with key being the legend of the image :
+        ```
         {legend: {'filename': full_filename_to_healpix_map.fits,
                     'doContour': True }, # optionnal
          ... }
+        ```
 
     Returns
     -------
     a list of tuple following the new convention:
+    ```
     [(full_filename_to_healpix_map.fits, {'legend': legend,
                                           'doContour': True}), # optionnal
      ... ]
-
+    ```
     """
 
     warnings.warn("deprecated", DeprecationWarning)
@@ -350,16 +371,17 @@ def cutsky(lonlat=None, maps=None, patch=[256, 1], coordframe='galactic', ctype=
     maps: a dict or a list
         either a dictionnary (old interface) or a list of tuple (new
         interface) :
-
+        ```
         {legend: {'filename': full_filename_to_healpix_map.fits,
                   'doContour': True }, # optionnal
          ... }
-
-        or
-
-        [(full_filename_to_healpix_map.fits, {'legend': legend,
+         ```
+         or
+         ```
+         [(full_filename_to_healpix_map.fits, {'legend': legend,
                                               'doContour': True}), # optionnal
          ... ]
+         ```
     patch : array of [int, float]
         [int] the number of pixels and
         [float] the size of the pixel [arcmin]
@@ -379,18 +401,18 @@ def cutsky(lonlat=None, maps=None, patch=[256, 1], coordframe='galactic', ctype=
 
     """
 
-    if not lonlat:
+    if lonlat is None:
         raise ValueError("You must provide a lonlat argument")
 
-    if not maps:
+    if maps is None:
         raise FileNotFoundError("No healpix map to project")
 
     if isinstance(maps, dict):
         maps = to_new_maps(maps)
 
-    CutThoseMaps = CutSkySquare(maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
-    result = CutThoseMaps.cutsky_png(lonlat=lonlat, coordframe=coordframe)
-    result = CutThoseMaps.cutsky_phot(lonlat=lonlat, coordframe=coordframe)
+    CutThoseMaps = CutSky(maps=maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
+    result = CutThoseMaps.cut_png(lonlat=lonlat, coordframe=coordframe)
+    result = CutThoseMaps.cut_phot(lonlat=lonlat, coordframe=coordframe)
 
     return result
 
@@ -600,13 +622,13 @@ def main(argv = None):
 
     npix, pixsize, coordframe, ctype, maps, output = combine_args(args, config)
 
-    CutThoseMaps = CutSkySquare(maps, npix=npix, pixsize=pixsize, ctype=ctype)
+    CutThoseMaps = CutSky(maps=maps, npix=npix, pixsize=pixsize, ctype=ctype)
     if output['fits']:
-        results = CutThoseMaps.cutsky_fits(lonlat=[args.lon, args.lat], coordframe=coordframe)
+        results = CutThoseMaps.cut_fits(lonlat=[args.lon, args.lat], coordframe=coordframe)
     if output['png']:
-        results = CutThoseMaps.cutsky_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
+        results = CutThoseMaps.cut_png(lonlat=[args.lon, args.lat], coordframe=coordframe)
     if output['votable']:
-        results = CutThoseMaps.cutsky_phot(lonlat=[args.lon, args.lat], coordframe=coordframe)
+        results = CutThoseMaps.cut_phot(lonlat=[args.lon, args.lat], coordframe=coordframe)
 
     if not os.path.isdir(output['outdir']):
         os.makedirs(output['outdir'])
@@ -622,9 +644,9 @@ def main(argv = None):
                 hdulist.writeto(os.path.join(output['outdir'],result['legend']+'.fits'), clobber=True)
 
         if 'png' in result.keys() and output['png']:
-            output = open(os.path.join(output['outdir'],result['legend']+'.png'), 'wb')
-            output.write(b64decode(result['png']))
-            output.close()
+            png = open(os.path.join(output['outdir'],result['legend']+'.png'), 'wb')
+            png.write(b64decode(result['png']))
+            png.close()
 
         if 'phot' in result.keys() and output['votable'] :
             result['phot'].write(os.path.join(output['outdir'],result['legend']+'.xml'), format='votable')

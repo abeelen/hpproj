@@ -12,7 +12,7 @@ logger = logging.getLogger('django')
 import pytest
 
 from .. import parse_args, parse_config, combine_args
-from .. import CutSkySquare, cutsky, main, to_new_maps
+from .. import CutSky, cutsky, main, to_new_maps
 from .. import DEFAULT_npix, DEFAULT_coordframe, DEFAULT_pixsize, DEFAULT_ctype
 
 import numpy as np
@@ -205,12 +205,12 @@ class TestCombineArgs:
         assert(output == result)
 
 
-def test_CutSkySquare_init_exception():
-    with pytest.raises(TypeError):
-        cutsky = CutSkySquare()
+def test_CutSky_init_exception():
+    with pytest.raises(FileNotFoundError):
+        cutsky = CutSky()
 
     with pytest.raises(IOError):
-        custky = CutSkySquare([('toto.fits', {})])
+        custky = CutSky(maps=[('toto.fits', {})])
 
 @pytest.fixture(scope='session')
 def generate_hpmap(tmpdir_factory):
@@ -230,12 +230,12 @@ def generate_hpmap(tmpdir_factory):
     return ([(str(tmpfile), {'legend': 'tmpfile'}) ], hp_map, hp_key)
 
 # TODO : what happen when file do not exist or are not healpix maps
-def test_CutSkySquare_init(generate_hpmap):
+def test_CutSky_init(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
 
-    cutsky = CutSkySquare(hp_map, low_mem=True)
+    cutsky = CutSky(maps=hp_map, low_mem=True)
     assert(cutsky.npix == DEFAULT_npix)
     assert(cutsky.pixsize == DEFAULT_pixsize)
     assert(cutsky.ctype == DEFAULT_ctype)
@@ -245,59 +245,59 @@ def test_CutSkySquare_init(generate_hpmap):
     assert(cutsky.maps[hp_key][0][2]['legend'] == opt['legend'])
 
     hp_map[0][1]['doContour'] = True
-    cutsky = CutSkySquare(hp_map, low_mem=False)
+    cutsky = CutSky(maps=hp_map, low_mem=False)
     npt.assert_array_equal(cutsky.maps[hp_key][0][1], hp_map_data)
     assert(cutsky.maps[hp_key][0][2]['doContour'] == True)
 
-def test_CutSkySquare_cutsky_fits(generate_hpmap):
+def test_CutSky_cut_fits(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
 
-    cutsky = CutSkySquare(hp_map, low_mem=True)
-    result = cutsky.cutsky_fits([0,0])
+    cutsky = CutSky(maps=hp_map, low_mem=True)
+    result = cutsky.cut_fits([0,0])
     assert(len(result) == 1)
     assert(result[0]['legend'] == opt['legend'])
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
 
-def test_CutSkySquare_cutsky_png(generate_hpmap):
+def test_CutSky_cut_png(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
     hp_map[0][1]['doContour'] = True
     # Will actually not produce a contour in this situation
 
-    cutsky = CutSkySquare(hp_map, low_mem=True)
-    result = cutsky.cutsky_png([0,0])
+    cutsky = CutSky(maps=hp_map, low_mem=True)
+    result = cutsky.cut_png([0,0])
     assert(len(result) == 1)
     assert(result[0]['legend'] == opt['legend'])
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
     assert(result[0]['fits'].header['doContour'] == True)
     # CHECK png .... ?
 
-    cutsky = CutSkySquare(hp_map, low_mem=True)
-    result2 = cutsky.cutsky_fits([0,0])
-    result2 = cutsky.cutsky_png([0,0])
+    cutsky = CutSky(maps=hp_map, low_mem=True)
+    result2 = cutsky.cut_fits([0,0])
+    result2 = cutsky.cut_png([0,0])
     assert(result[0]['legend'] == result2[0]['legend'])
     npt.assert_array_equal(result[0]['fits'].data.data , result2[0]['fits'].data.data)
     assert(result[0]['png'] == result2[0]['png'])
 
-def test_CutSkySquare_cutsky_phot(generate_hpmap):
+def test_CutSky_cut_phot(generate_hpmap):
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
     hp_map[0][1]['doContour'] = True
 
-    cutsky = CutSkySquare(hp_map, low_mem=True)
-    result = cutsky.cutsky_phot([0,0])
+    cutsky = CutSky(maps=hp_map, low_mem=True)
+    result = cutsky.cut_phot([0,0])
     assert(len(result) == 1)
     assert(result[0]['legend'] == opt['legend'])
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
     assert(result[0]['fits'].header['doContour'] == True)
     assert(result[0]['phot'][0][0] == 0.0)
 
-    cutsky = CutSkySquare(hp_map, low_mem=True)
-    result2 = cutsky.cutsky_fits([0,0])
-    result2 = cutsky.cutsky_phot([0,0])
+    cutsky = CutSky(maps=hp_map, low_mem=True)
+    result2 = cutsky.cut_fits([0,0])
+    result2 = cutsky.cut_phot([0,0])
     assert(result[0]['legend'] == result2[0]['legend'])
     npt.assert_array_equal(result[0]['fits'].data.data , result2[0]['fits'].data.data)
     assert(result[0]['phot'][0][0] == result2[0]['phot'][0][0])
@@ -339,15 +339,19 @@ class TestCutSky:
         filename, opt = hp_map[0]
 
         outdir = os.path.join(os.path.dirname(filename), 'output')
+        png_file = os.path.join(outdir,opt['legend']+'.png')
+        fits_file = os.path.join(outdir,opt['legend']+'.fits')
+        xml_file = os.path.join(outdir,opt['legend']+'.xml')
 
         args = "0.0 0.0"+ \
                " --mapfilenames "+ filename + \
                " --outdir "+ outdir
 
         exit_code = main(args.split())
-        assert(os.path.exists(os.path.join(outdir,opt['legend']+'.png')))
-        assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
-        assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+        assert(os.path.exists(png_file))
+        assert(not os.path.exists(fits_file))
+        assert(not os.path.exists(xml_file))
+        os.remove(png_file)
 
         args = "0.0 0.0"+ \
                " --mapfilenames "+ filename + \
@@ -355,8 +359,10 @@ class TestCutSky:
                " --outdir "+ outdir
 
         exit_code = main(args.split())
-        assert(os.path.exists(os.path.join(outdir,opt['legend']+'.fits')))
-        assert(not os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+        assert(not os.path.exists(png_file))
+        assert(os.path.exists(fits_file))
+        assert(not os.path.exists(xml_file))
+        os.remove(fits_file)
 
         args = "0.0 0.0"+ \
                " --mapfilenames "+ filename + \
@@ -364,4 +370,6 @@ class TestCutSky:
                " --outdir "+ outdir
 
         exit_code = main(args.split())
-        assert(os.path.exists(os.path.join(outdir,opt['legend']+'.xml')))
+        assert(not os.path.exists(png_file))
+        assert(os.path.exists(fits_file))
+        assert(os.path.exists(xml_file))
