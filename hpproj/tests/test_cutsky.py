@@ -297,6 +297,10 @@ def test_CutSky_cut_fits_selection(generate_hpmap):
     assert(len(result) == 1)
     assert(result[0]['legend'] == 'tmpfile2')
 
+    result = cutsky.cut_png([0,0], maps_selection=[filename2])
+    assert(len(result) == 1)
+    assert(result[0]['legend'] == 'tmpfile2')
+
 def test_CutSky_cut_png(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap

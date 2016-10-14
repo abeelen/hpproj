@@ -251,7 +251,7 @@ class CutSky(object):
             cuts = self.cuts
         else:
             # Or cut the maps
-            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe)
+            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe, maps_selection=maps_selection)
 
         # Plotting
         patch = np.zeros((self.npix, self.npix))
@@ -333,7 +333,7 @@ class CutSky(object):
             cuts = self.cuts
         else:
             # Or cut the maps
-            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe)
+            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe, maps_selection=maps_selection)
 
         positions = [(self.npix*1./2., self.npix*1./2) ]
         apertures = CircularAperture(positions, r = 3./self.pixsize)
