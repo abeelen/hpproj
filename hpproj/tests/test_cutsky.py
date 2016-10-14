@@ -275,10 +275,16 @@ def test_CutSky_cut_fits(generate_hpmap):
 
 def test_CutSky_cut_fits_selection(generate_hpmap):
 
+
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
 
-    hp_maps = [ hp_map[0], (filename, {'legend': 'tmpfile2'}) ]
+    filename2 = filename.replace('.fits', '2.fits')
+    opt2 = {'legend': 'tmpfile2'}
+    import shutil
+    shutil.copy(filename, filename2)
+
+    hp_maps = [ hp_map[0], (filename2, opt2) ]
     cutsky = CutSky(maps=hp_maps, low_mem=True)
     result = cutsky.cut_fits([0,0])
     assert(len(result) == 2)
@@ -287,6 +293,9 @@ def test_CutSky_cut_fits_selection(generate_hpmap):
     assert(len(result) == 1)
     assert(result[0]['legend'] == 'tmpfile2')
 
+    result = cutsky.cut_fits([0,0], maps_selection=[filename2])
+    assert(len(result) == 1)
+    assert(result[0]['legend'] == 'tmpfile2')
 
 def test_CutSky_cut_png(generate_hpmap):
 

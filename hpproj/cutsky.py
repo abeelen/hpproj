@@ -157,8 +157,8 @@ class CutSky(object):
         coordframe : str
             the coordinate frame used for the position AND the projection
         maps_selection : list
-            optionnal list of the 'legend' of the map to select a
-            sub-sample of them.
+            optionnal list of the 'legend' or filename of the map to
+            select a sub-sample of them.
 
         Returns
         -------
@@ -199,7 +199,9 @@ class CutSky(object):
                 legend = iHeader['legend']
 
                 # Skip if not in the maps_selection
-                if self.maps_selection and legend not in self.maps_selection:
+                if self.maps_selection and \
+                   ( legend not in self.maps_selection and \
+                     filename not in self.maps_selection) :
                     continue
 
                 patch = np.ma.array(np.zeros((self.npix, self.npix)), mask=~mask, fill_value=np.nan)
@@ -228,8 +230,8 @@ class CutSky(object):
         coordframe : str
             the coordinate frame used for the position AND the projection
         maps_selection : list
-            optionnal list of the 'legend' of the map to select a
-            sub-sample of them.
+            optionnal list of the 'legend' or filename of the map to
+            select a sub-sample of them.
 
         Returns
         -------
@@ -238,6 +240,7 @@ class CutSky(object):
             * 'legend' (the opts{'legend'} see __init()),
             * 'fits' an ~astropy.io.fits.ImageHDU,
             * 'png', a b61encoded png image of the fits
+
         """
 
         if self.lonlat == lonlat and \
@@ -309,8 +312,8 @@ class CutSky(object):
         coordframe : str
             the coordinate frame used for the position AND the projection
         maps_selection : list
-            optionnal list of the 'legend' of the map to select a
-            sub-sample of them.
+            optionnal list of the 'legend' or filename of the map to
+            select a sub-sample of them.
 
         Returns
         -------
@@ -319,6 +322,7 @@ class CutSky(object):
             * 'legend' (the opts{'legend'} see __init()),
             * 'fits' an ~astropy.io.fits.ImageHDU,
             * 'phot', the corresponding photometry
+
         """
 
         if self.lonlat == lonlat and \
