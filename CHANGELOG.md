@@ -4,6 +4,7 @@ master
 Added
 -----
 * ExtendedInterpolation for configparser for py3, only for filename in py2
+* ``maps_selection`` option in the cut_ functions to allow sub_sample selection
 
 Version 0.4.0
 =============
