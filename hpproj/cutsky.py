@@ -142,11 +142,12 @@ class CutSky(object):
         self.maps = group_hpmap(hp_map)
 
         # Save intermediate results
+        self.maps_selection = None
         self.cuts = None
         self.lonlat = None
         self.coordframe = DEFAULT_coordframe
 
-    def cut_fits(self,lonlat = [0, 0], coordframe = DEFAULT_coordframe):
+    def cut_fits(self,lonlat = [0, 0], coordframe = DEFAULT_coordframe, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header
 
         Parameters
@@ -155,6 +156,9 @@ class CutSky(object):
             the longitude and latitude of the center of projection [deg]
         coordframe : str
             the coordinate frame used for the position AND the projection
+        maps_selection : list
+            optionnal list of the 'legend' of the map to select a
+            sub-sample of them.
 
         Returns
         -------
@@ -162,7 +166,10 @@ class CutSky(object):
             the dictionnary has 2 keys :
             * 'legend' (the opts{'legend'} see __init())
             * 'fits' an ~astropy.io.fits.ImageHDU
+
         """
+
+        self.maps_selection = maps_selection
 
         # Center of projection
         coord_in = SkyCoord(lonlat[0],lonlat[1], unit=u.deg, frame=equiv_celestial(coordframe))
@@ -190,11 +197,16 @@ class CutSky(object):
             # Now the actual healpix map reading and projection
             for filename, iMap, iHeader in gen_hpmap(maps):
                 legend = iHeader['legend']
+
+                # Skip if not in the maps_selection
+                if self.maps_selection and legend not in self.maps_selection:
+                    continue
+
                 patch = np.ma.array(np.zeros((self.npix, self.npix)), mask=~mask, fill_value=np.nan)
                 patch[mask] = iMap[ipix]
                 header = w.to_header()
-                header.append(('filename',filename) ) #, 'original healpix filename')
-                header.append(('legend', legend) ) #, 'cutsky legend')
+                header.append(('filename',filename) )
+                header.append(('legend', legend) )
                 if 'doContour' in iHeader.keys():
                     header.append(('doContour', iHeader['doContour']))
 
@@ -206,7 +218,7 @@ class CutSky(object):
 
         return cuts
 
-    def cut_png(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe):
+    def cut_png(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding png
 
         Parameters
@@ -215,6 +227,9 @@ class CutSky(object):
             the longitude and latitude of the center of projection [deg]
         coordframe : str
             the coordinate frame used for the position AND the projection
+        maps_selection : list
+            optionnal list of the 'legend' of the map to select a
+            sub-sample of them.
 
         Returns
         -------
@@ -227,6 +242,7 @@ class CutSky(object):
 
         if self.lonlat == lonlat and \
            self.coordframe == coordframe and  \
+           self.maps_selection == maps_selection and \
            self.cuts:
             # Retrieve previously cut maps
             cuts = self.cuts
@@ -286,7 +302,7 @@ class CutSky(object):
 
         return cuts
 
-    def cut_phot(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe):
+    def cut_phot(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding photometry
 
         Parameters
@@ -295,6 +311,9 @@ class CutSky(object):
             the longitude and latitude of the center of projection [deg]
         coordframe : str
             the coordinate frame used for the position AND the projection
+        maps_selection : list
+            optionnal list of the 'legend' of the map to select a
+            sub-sample of them.
 
         Returns
         -------
@@ -307,6 +326,7 @@ class CutSky(object):
 
         if self.lonlat == lonlat and \
            self.coordframe == coordframe and  \
+           self.maps_selection == maps_selection and \
            self.cuts:
             # Retrieve previously cut maps
             cuts = self.cuts

@@ -272,6 +272,22 @@ def test_CutSky_cut_fits(generate_hpmap):
     assert(result[0]['legend'] == opt['legend'])
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
 
+
+def test_CutSky_cut_fits_selection(generate_hpmap):
+
+    hp_map, hp_map_data, hp_key = generate_hpmap
+    filename, opt = hp_map[0]
+
+    hp_maps = [ hp_map[0], (filename, {'legend': 'tmpfile2'}) ]
+    cutsky = CutSky(maps=hp_maps, low_mem=True)
+    result = cutsky.cut_fits([0,0])
+    assert(len(result) == 2)
+
+    result = cutsky.cut_fits([0,0], maps_selection=['tmpfile2'])
+    assert(len(result) == 1)
+    assert(result[0]['legend'] == 'tmpfile2')
+
+
 def test_CutSky_cut_png(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
