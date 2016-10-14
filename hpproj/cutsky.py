@@ -234,14 +234,11 @@ class CutSky(object):
             # Or cut the maps
             cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe)
 
-        # Common WCS for all cut maps
-        w = WCS(cuts[0]['fits'])
-
         # Plotting
         patch = np.zeros((self.npix, self.npix))
         fig=plt.figure()
 
-        wcs_proj=WCS(w.to_header())
+        wcs_proj=WCS(cuts[0]['fits'])
         ax_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
         proj_im = ax_wcs.imshow(patch, interpolation='none', origin='lower' )
         ax_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
