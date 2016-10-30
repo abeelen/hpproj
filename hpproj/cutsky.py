@@ -26,6 +26,8 @@ from astropy.coordinates import SkyCoord
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
+from itertools import groupby, repeat
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -53,7 +55,7 @@ except NameError: # pragma: py2
 from .hp_helper import build_WCS, hp_to_wcs_ipx
 from .hp_helper import VALID_PROJ, VALID_EQUATORIAL, VALID_GALACTIC
 from .hp_helper import equiv_celestial
-from .hp_helper import build_hpmap, group_hpmap, gen_hpmap
+from .hp_helper import build_hpmap, gen_hpmap, hpmap_key
 
 DEFAULT_npix = 256
 DEFAULT_pixsize = 1
@@ -139,7 +141,8 @@ class CutSky(object):
             iHeader.extend(opt)
 
         # group them by map properties for efficiencies reasons
-        self.maps = group_hpmap(hp_map)
+        hp_map.sort(key=hpmap_key)
+        self.maps = hp_map
 
         # Save intermediate results
         self.maps_selection = None
@@ -178,14 +181,16 @@ class CutSky(object):
         w = build_WCS(coord_in, pixsize=self.pixsize/60., npix=self.npix, proj_sys=coordframe, proj_type=self.ctype)
 
         cuts = []
-        for group in self.maps.keys():
+        for group, maps in groupby(self.maps, key=hpmap_key):
             logger.info('projecting '+group)
 
-            maps = self.maps[group]
 
             # Construct a basic healpix header from the group key, this
             # will be commun for all the maps in this group
-            hp_header = maps[0][2]
+            nside, ordering, coordsys = group.split('_')
+            hp_header = {'NSIDE': int(nside),
+                         'ORDERING': ordering,
+                         'COORDSYS': coordsys}
 
             # Extract mask & pixels, common for all healpix maps of this
             # group

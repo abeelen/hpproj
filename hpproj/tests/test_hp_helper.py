@@ -9,7 +9,7 @@ from .. import equiv_celestial, hp_celestial, hp_is_nest, build_ctype
 from .. import build_WCS, build_WCS_cube, build_WCS_2pts
 from .. import build_WCS_lonlat
 from .. import hp_to_wcs, hp_to_wcs_ipx
-from .. import hp_project, gen_hpmap, group_hpmap
+from .. import hp_project, gen_hpmap, hpmap_key
 
 import pytest
 
@@ -360,34 +360,44 @@ def test_gen_hpmap():
         assert(name == 'map'+str(i))
         npt.assert_array_equal(hp_map, i)
 
-def test_group_hpmap():
+def test_hpmap_key():
 
-    nside = 2**6
+    hp_map = ('dummy', 'dummy', {'NSIDE': 32,
+                                'ORDERING': 'RING',
+                                'COORDSYS': 'C'} )
+    key = hpmap_key(hp_map)
 
-    hp_headers = [ {'NSIDE': nside,
-                    'ORDERING': 'RING',
-                    'COORDSYS': 'C'},
-                   {'NSIDE': nside,
-                    'ORDERING': 'NEST',
-                    'COORDSYS': 'C'},
-                   {'NSIDE': nside/2,
-                    'ORDERING': 'RING',
-                    'COORDSYS': 'C'},
-                   {'NSIDE': nside,
-                    'ORDERING': 'RING',
-                    'COORDSYS': 'G'} ]
+    assert(isinstance(key, str))
+    assert(key == u'32_RING_icrs')
 
-    hp_keys = ["%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],  hp_celestial(hp_header).name) for hp_header in hp_headers]
+# def test_group_hpmap():
 
-    maps = [ ('dummy_'+str(i),'dummy_'+str(i),hp_header) for i,hp_header in enumerate(hp_headers) ]
-    maps.append(('dummy_4', 'dummy_4', hp_headers[0]))
+#     nside = 2**6
 
-    grouped_maps = group_hpmap(maps)
+#     hp_headers = [ {'NSIDE': nside,
+#                     'ORDERING': 'RING',
+#                     'COORDSYS': 'C'},
+#                    {'NSIDE': nside,
+#                     'ORDERING': 'NEST',
+#                     'COORDSYS': 'C'},
+#                    {'NSIDE': nside/2,
+#                     'ORDERING': 'RING',
+#                     'COORDSYS': 'C'},
+#                    {'NSIDE': nside,
+#                     'ORDERING': 'RING',
+#                     'COORDSYS': 'G'} ]
 
-    # First and last should be grouped
-    assert(grouped_maps[hp_keys[0]] == [maps[0], maps[-1]])
+#     hp_keys = ["%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],  hp_celestial(hp_header).name) for hp_header in hp_headers]
 
-    # Test the singletons (all but first and last)
-    for i,key in enumerate(hp_keys[1:]):
-        assert(len(grouped_maps[key]) == 1 )
-        assert(grouped_maps[key][0] == maps[i+1] )
+#     maps = [ ('dummy_'+str(i),'dummy_'+str(i),hp_header) for i,hp_header in enumerate(hp_headers) ]
+#     maps.append(('dummy_4', 'dummy_4', hp_headers[0]))
+
+#     grouped_maps = group_hpmap(maps)
+
+#     # First and last should be grouped
+#     assert(grouped_maps[hp_keys[0]] == [maps[0], maps[-1]])
+
+#     # Test the singletons (all but first and last)
+#     for i,key in enumerate(hp_keys[1:]):
+#         assert(len(grouped_maps[key]) == 1 )
+#         assert(grouped_maps[key][0] == maps[i+1] )

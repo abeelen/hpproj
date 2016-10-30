@@ -196,23 +196,33 @@ class TestCombineArgs:
         assert(npix == 3600)
 
     @pytest.mark.parametrize("cmd, conf, level",
-                             [('0.0 0.0 --verbose', {}, logging.DEBUG),
-                              ('0.0 0.0 --quiet', {}, logging.ERROR),
-                              ('0.0 0.0', {'verbosity': logging.DEBUG}, logging.DEBUG),
-                              ('0.0 0.0 --quiet', {'verbosity': logging.DEBUG}, logging.ERROR)
+                             [('--verbose', {},
+                               logging.DEBUG),
+                              ('--quiet', {},
+                               logging.ERROR),
+                              ('', {'verbosity': logging.DEBUG},
+                               logging.DEBUG),
+                              ('--quiet', {'verbosity': logging.DEBUG},
+                               logging.ERROR)
                              ])
     def test_combine_args_verbosity(self, cmd, conf, level):
-        args = parse_args(cmd.split())
+        args = parse_args(('0.0 0.0 '+cmd).split())
         (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, conf)
         assert(logger.level == level)
 
     @pytest.mark.parametrize("cmd, conf, result",
-                             [('0.0 0.0 --png', {}, {'fits': False, 'png': True, 'votable': False, 'outdir': '.'}),
-                              ('0.0 0.0 --png --fits --votable', {}, {'fits': True, 'png': True, 'votable': True, 'outdir': '.'}),
-                              ('0.0 0.0 --png --outdir toto', {'fits': True}, {'fits': True, 'png': True, 'votable': False, 'outdir': 'toto'}),
+                             [('--png', {},
+                               {'fits': False, 'png': True,
+                                'votable': False, 'outdir': '.'}),
+                              ('--png --fits --votable', {},
+                               {'fits': True, 'png': True,
+                                'votable': True, 'outdir': '.'}),
+                              ('--png --outdir toto', {'fits': True},
+                               {'fits': True, 'png': True,
+                                'votable': False, 'outdir': 'toto'}),
                              ])
     def test_combine_args_output(self, cmd, conf, result):
-        args = parse_args(cmd.split())
+        args = parse_args(('0.0 0.0 '+cmd).split())
         (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, conf)
         assert(output == result)
 
@@ -251,15 +261,15 @@ def test_CutSky_init(generate_hpmap):
     assert(cutsky.npix == DEFAULT_npix)
     assert(cutsky.pixsize == DEFAULT_pixsize)
     assert(cutsky.ctype == DEFAULT_ctype)
-    assert(list(cutsky.maps.keys()) == [hp_key])
-    assert(cutsky.maps[hp_key][0][0] == filename)
-    assert(cutsky.maps[hp_key][0][1] == filename)
-    assert(cutsky.maps[hp_key][0][2]['legend'] == opt['legend'])
+
+    assert(cutsky.maps[0][0] == filename)
+    assert(cutsky.maps[0][1] == filename)
+    assert(cutsky.maps[0][2]['legend'] == opt['legend'])
 
     hp_map[0][1]['doContour'] = True
     cutsky = CutSky(maps=hp_map, low_mem=False)
-    npt.assert_array_equal(cutsky.maps[hp_key][0][1], hp_map_data)
-    assert(cutsky.maps[hp_key][0][2]['doContour'] == True)
+    npt.assert_array_equal(cutsky.maps[0][1], hp_map_data)
+    assert(cutsky.maps[0][2]['doContour'] == True)
 
 def test_CutSky_cut_fits(generate_hpmap):
 
@@ -274,7 +284,6 @@ def test_CutSky_cut_fits(generate_hpmap):
 
 
 def test_CutSky_cut_fits_selection(generate_hpmap):
-
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]

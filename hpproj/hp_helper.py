@@ -29,7 +29,7 @@ __all__ = ['build_WCS', 'build_WCS_lonlat',
            'hp_is_nest', 'hp_celestial',
            'hp_to_wcs', 'hp_to_wcs_ipx',
            'hp_project',
-           'gen_hpmap', 'build_hpmap',
+           'gen_hpmap', 'build_hpmap', 'hpmap_key',
            'equiv_celestial']
 
 DEFAULT_shape_out = (512, 512)
@@ -42,7 +42,7 @@ VALID_PROJ = ['AZP', 'SZP', 'TAN', 'STG', 'SIN',
               'QSC','HPX','XPH']
 
 VALID_GALACTIC = ['galactic', 'g']
-VALID_EQUATORIAL = ['celestial2000','equatorial', 'eq', 'c', 'q', 'fk5']
+VALID_EQUATORIAL = ['celestial2000','equatorial', 'eq', 'c', 'q','fk4', 'fk5', 'icrs']
 
 def equiv_celestial(frame):
     """Return an equivalent ~astropy.coordfinates.builtin_frames
@@ -608,29 +608,21 @@ def build_hpmap(filenames, low_mem=True):
         hp_maps.append( (filename, hp_map, hp_header ) )
     return hp_maps
 
-def group_hpmap(maps):
-    """Group into a dictionnary the hp_maps according to map properties
+
+def hpmap_key(hp_map):
+    """Generate an key from the hp_map tuple to sort the hp_maps by map
+    properties
 
     Parameters
     ----------
-    hpmap: tuple list
-        A list of tuple which can be used by gen_hpmap
+    hp_map: tuple
+        A tuple from (build|gen)_hpmap : (filename, healpix map, healpix header)
 
     Return
     ------
-    dict
-        A dictionnary where each key contains hpmap sharing the same properties
-
+    str
+        A string with the map properties
     """
-    grouped_hpmaps = {}
+    filename, iMap, iHeader = hp_map
 
-    for (filename, iMap, iHeader) in maps:
-        mapKey = "%s_%s_%s"%(iHeader['NSIDE'], iHeader['ORDERING'],  hp_celestial(iHeader).name)
-        iHeader['mapKey'] = mapKey
-
-        if mapKey in grouped_hpmaps.keys():
-            grouped_hpmaps[mapKey].append((filename, iMap, iHeader))
-        else:
-            grouped_hpmaps[mapKey] = [(filename, iMap, iHeader)]
-
-    return grouped_hpmaps
+    return "%s_%s_%s"%(iHeader['NSIDE'], iHeader['ORDERING'],  hp_celestial(iHeader).name)
