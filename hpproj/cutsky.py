@@ -9,14 +9,15 @@ import logging
 logger = logging.getLogger('django')
 
 import warnings
-import os, sys
+import os
+import sys
 import argparse
+from base64 import b64encode
 
 import numpy as np
-import healpy as hp
 
 # try: # prama: no cover
-#     from wcsaxes import WCS # (deprecated)
+# from wcsaxes import WCS # (deprecated)
 # except ImportError: # pragma: no cover
 from astropy.wcs import WCS
 
@@ -26,30 +27,28 @@ from astropy.coordinates import SkyCoord
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
-from itertools import groupby, repeat
+from itertools import groupby
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-try: # pragma: py3
+try:  # pragma: py3
     from configparser import ConfigParser, ExtendedInterpolation
     pattern = None
-except ImportError: # pragma: py2
+except ImportError:  # pragma: py2
     import re
     from ConfigParser import ConfigParser
     pattern = re.compile(r"\$\{(.*?)\}")
 
-try: # pragma: py3
+try:  # pragma: py3
     from io import BytesIO
-except ImportError: # pragma: py2
+except ImportError:  # pragma: py2
     from cStringIO import StringIO as BytesIO
 
-from base64 import b64encode
-
-try: # pragma: py3
+try:  # pragma: py3
     FileNotFoundError
-except NameError: # pragma: py2
+except NameError:  # pragma: py2
     FileNotFoundError = IOError
 
 from .hp_helper import build_WCS, hp_to_wcs_ipx
@@ -62,7 +61,9 @@ DEFAULT_pixsize = 1
 DEFAULT_coordframe = 'galactic'
 DEFAULT_ctype = 'TAN'
 
+
 class CutSky(object):
+
     """
     Container for Healpix maps and cut_* methods
 
@@ -150,7 +151,7 @@ class CutSky(object):
         self.lonlat = None
         self.coordframe = DEFAULT_coordframe
 
-    def cut_fits(self,lonlat = [0, 0], coordframe = DEFAULT_coordframe, maps_selection=None):
+    def cut_fits(self, lonlat=[0, 0], coordframe=DEFAULT_coordframe, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header
 
         Parameters
@@ -175,15 +176,15 @@ class CutSky(object):
         self.maps_selection = maps_selection
 
         # Center of projection
-        coord_in = SkyCoord(lonlat[0],lonlat[1], unit=u.deg, frame=equiv_celestial(coordframe))
+        coord_in = SkyCoord(lonlat[0], lonlat[1], unit=u.deg, frame=equiv_celestial(coordframe))
 
         # Build the target WCS header
-        w = build_WCS(coord_in, pixsize=self.pixsize/60., npix=self.npix, proj_sys=coordframe, proj_type=self.ctype)
+        w = build_WCS(coord_in, pixsize=self.pixsize / 60.,
+                      npix=self.npix, proj_sys=coordframe, proj_type=self.ctype)
 
         cuts = []
         for group, maps in groupby(self.maps, key=hpmap_key):
-            logger.info('projecting '+group)
-
+            logger.info('projecting ' + group)
 
             # Construct a basic healpix header from the group key, this
             # will be commun for all the maps in this group
@@ -205,27 +206,28 @@ class CutSky(object):
 
                 # Skip if not in the maps_selection
                 if self.maps_selection and \
-                   ( legend not in self.maps_selection and \
-                     filename not in self.maps_selection) :
+                   (legend not in self.maps_selection and
+                        filename not in self.maps_selection):
                     continue
 
-                patch = np.ma.array(np.zeros((self.npix, self.npix)), mask=~mask, fill_value=np.nan)
+                patch = np.ma.array(
+                    np.zeros((self.npix, self.npix)), mask=~mask, fill_value=np.nan)
                 patch[mask] = iMap[ipix]
                 header = w.to_header()
-                header.append(('filename',filename) )
-                header.append(('legend', legend) )
+                header.append(('filename', filename))
+                header.append(('legend', legend))
                 if 'doContour' in iHeader.keys():
                     header.append(('doContour', iHeader['doContour']))
 
-                cuts.append( {'legend': legend,
-                              'fits': fits.ImageHDU(patch, header)} )
+                cuts.append({'legend': legend,
+                             'fits': fits.ImageHDU(patch, header)})
         self.lonlat = lonlat
         self.coordframe = coordframe
         self.cuts = cuts
 
         return cuts
 
-    def cut_png(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe, maps_selection=None):
+    def cut_png(self, lonlat=[0, 0], coordframe=DEFAULT_coordframe, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding png
 
         Parameters
@@ -256,15 +258,16 @@ class CutSky(object):
             cuts = self.cuts
         else:
             # Or cut the maps
-            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe, maps_selection=maps_selection)
+            cuts = self.cut_fits(
+                lonlat=lonlat, coordframe=coordframe, maps_selection=maps_selection)
 
         # Plotting
         patch = np.zeros((self.npix, self.npix))
-        fig=plt.figure()
+        fig = plt.figure()
 
-        wcs_proj=WCS(cuts[0]['fits'])
-        ax_wcs=fig.add_axes([0.1,0.1,0.9,0.9],projection=wcs_proj)
-        proj_im = ax_wcs.imshow(patch, interpolation='none', origin='lower' )
+        wcs_proj = WCS(cuts[0]['fits'])
+        ax_wcs = fig.add_axes([0.1, 0.1, 0.9, 0.9], projection=wcs_proj)
+        proj_im = ax_wcs.imshow(patch, interpolation='none', origin='lower')
         ax_wcs.coords.grid(color='green', linestyle='solid', alpha=0.5)
 
         if np.str(coordframe) in VALID_EQUATORIAL:
@@ -278,10 +281,10 @@ class CutSky(object):
             ax_wcs.coords['glon'].set_axislabel(r'$l$')
             ax_wcs.coords['glat'].set_axislabel(r'$b$')
 
-        for cut in cuts :
+        for cut in cuts:
 
             legend = cut['legend']
-            logger.debug('plotting '+ legend)
+            logger.debug('plotting ' + legend)
 
             patch = cut['fits'].data
             patch_header = cut['fits'].header
@@ -290,24 +293,25 @@ class CutSky(object):
             proj_im.set_clim(vmin=patch.min(), vmax=patch.max())
 
             if 'doContour' in patch_header.keys() and patch_header['doContour']:
-                logger.debug('contouring '+legend)
-                levels=[patch.max()/3., patch.max()/2.]
-                if ((patch.max()-patch.mean()) > 3*patch.std()):
-                    proj_cont = ax_wcs.contour(patch,levels=levels,colors="white",interpolation='bicubic')
+                logger.debug('contouring ' + legend)
+                levels = [patch.max() / 3., patch.max() / 2.]
+                if ((patch.max() - patch.mean()) > 3 * patch.std()):
+                    proj_cont = ax_wcs.contour(
+                        patch, levels=levels, colors="white", interpolation='bicubic')
                 else:
                     proj_cont = None
 
-            logger.debug('saving '+legend)
+            logger.debug('saving ' + legend)
 
             # Add the map to the cut dictionnary
             output_map = BytesIO()
-            plt.savefig(output_map,bbox_inches='tight', format='png',dpi=75, frameon=False)
+            plt.savefig(output_map, bbox_inches='tight', format='png', dpi=75, frameon=False)
             cut['png'] = b64encode(output_map.getvalue()).strip()
-            logger.debug(legend+ ' done')
+            logger.debug(legend + ' done')
 
         return cuts
 
-    def cut_phot(self, lonlat = [0, 0], coordframe = DEFAULT_coordframe, maps_selection=None):
+    def cut_phot(self, lonlat=[0, 0], coordframe=DEFAULT_coordframe, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding photometry
 
         Parameters
@@ -338,21 +342,23 @@ class CutSky(object):
             cuts = self.cuts
         else:
             # Or cut the maps
-            cuts = self.cut_fits(lonlat=lonlat, coordframe=coordframe, maps_selection=maps_selection)
+            cuts = self.cut_fits(
+                lonlat=lonlat, coordframe=coordframe, maps_selection=maps_selection)
 
-        positions = [(self.npix*1./2., self.npix*1./2) ]
-        apertures = CircularAperture(positions, r = 3./self.pixsize)
+        positions = [(self.npix * 1. / 2., self.npix * 1. / 2)]
+        apertures = CircularAperture(positions, r=3. / self.pixsize)
 
-        for cut in cuts :
+        for cut in cuts:
             legend = cut['legend']
-            logger.debug('phot on '+ legend)
+            logger.debug('phot on ' + legend)
 
             patch = cut['fits'].data
-            cut['phot'] = aperture_photometry(patch-np.median(patch), apertures)
+            cut['phot'] = aperture_photometry(patch - np.median(patch), apertures)
 
-            logger.debug(legend+ ' done')
+            logger.debug(legend + ' done')
 
         return cuts
+
 
 def to_new_maps(maps):
     """Transform old dictionnary type healpix map list used by cutsky to
@@ -389,6 +395,7 @@ def to_new_maps(maps):
         new_maps.append((filename, opt))
 
     return new_maps
+
 
 def cutsky(lonlat=None, maps=None, patch=[256, 1], coordframe='galactic', ctype=DEFAULT_ctype):
     """Old interface to cutsky -- Here mostly for compability
@@ -445,6 +452,7 @@ def cutsky(lonlat=None, maps=None, patch=[256, 1], coordframe='galactic', ctype=
 
     return result
 
+
 def parse_args(args):
     """Parse arguments from the command line"""
 
@@ -459,7 +467,7 @@ def parse_args(args):
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--npix', type=int,
-                        help='number of pixels (default 256)')
+                       help='number of pixels (default 256)')
     group.add_argument('--radius', type=float,
                        help='radius of the requested region [deg] ')
 
@@ -476,24 +484,25 @@ def parse_args(args):
                          (default:TAN)',
                         choices=VALID_PROJ)
 
-    input_map = parser.add_argument_group('input maps', description="one of the two options must be present")
+    input_map = parser.add_argument_group(
+        'input maps', description="one of the two options must be present")
 
     input_map.add_argument('--mapfilenames', nargs='+', required=False,
-                        help='absolute path to the healpix maps')
+                           help='absolute path to the healpix maps')
     input_map.add_argument('--conf', required=False,
-                         help='absolute path to a config file')
+                           help='absolute path to a config file')
 
     out = parser.add_argument_group('output')
     out.add_argument('--fits', action='store_true', help='output fits file')
-    out.add_argument('--png', action='store_true', help='output png file (Default: True if nothing else)')
+    out.add_argument('--png', action='store_true',
+                     help='output png file (Default: True if nothing else)')
     out.add_argument('--votable', action='store_true', help='output votable file')
     out.add_argument('--outdir', required=False, help='output directory (default:".")')
 
     general = parser.add_argument_group('general')
     verb = general.add_mutually_exclusive_group()
-    verb.add_argument('-v','--verbose', action='store_true', help='verbose mode')
-    verb.add_argument('-q','--quiet', action='store_true', help='quiet mode')
-
+    verb.add_argument('-v', '--verbose', action='store_true', help='verbose mode')
+    verb.add_argument('-q', '--quiet', action='store_true', help='quiet mode')
 
     # Do the actual parsing
     parsed_args = parser.parse_args(args)
@@ -501,10 +510,10 @@ def parse_args(args):
     # Put the list of filenames into the same structure as the config
     # file, we are loosing the doContour keyword but...
     if parsed_args.mapfilenames:
-        parsed_args.maps = [ ( filename,
-                               dict( [('legend', os.path.splitext(os.path.basename(filename))[0]) ]) )
-                             for filename in
-                             parsed_args.mapfilenames ]
+        parsed_args.maps = [(filename,
+                             dict([('legend', os.path.splitext(os.path.basename(filename))[0])]))
+                            for filename in
+                            parsed_args.mapfilenames]
     else:
         parsed_args.maps = None
 
@@ -521,17 +530,18 @@ def parse_args(args):
 def parse_config(conffile=None):
     """Parse options from a configuration file."""
 
-    if pattern: #pragma: py2
-       config = ConfigParser()
-       def rep_key(m):
-           section, key = re.split(':',m.group(1))
-           return config.get(section,key)
-    else: #pragma: py3
-       config = ConfigParser(interpolation=ExtendedInterpolation())
+    if pattern:  # pragma: py2
+        config = ConfigParser()
+
+        def rep_key(m):
+            section, key = re.split(':', m.group(1))
+            return config.get(section, key)
+    else:  # pragma: py3
+        config = ConfigParser(interpolation=ExtendedInterpolation())
 
     # Look for cutsky.cfg at several locations
-    conffiles = [ os.path.join(directory, 'cutsky.cfg') for directory
-                  in [os.curdir, os.path.join(os.path.expanduser("~"), '.config/cutsky')] ]
+    conffiles = [os.path.join(directory, 'cutsky.cfg') for directory
+                 in [os.curdir, os.path.join(os.path.expanduser("~"), '.config/cutsky')]]
 
     # If specifically ask for a config file, then put it at the
     # beginning ...
@@ -545,7 +555,7 @@ def parse_config(conffile=None):
 
     # Basic options, same as the option on the command line
     options = {}
-    if config.has_option('cutsky','npix'):
+    if config.has_option('cutsky', 'npix'):
         options['npix'] = config.getint('cutsky', 'npix')
     if config.has_option('cutsky', 'pixsize'):
         options['pixsize'] = config.getfloat('cutsky', 'pixsize')
@@ -555,11 +565,11 @@ def parse_config(conffile=None):
         options['ctype'] = config.get('cutsky', 'ctype')
     if config.has_option('cutsky', 'verbosity'):
         level = config.get('cutsky', 'verbosity').lower()
-        allowed_levels = { 'verbose': logging.DEBUG,
-                           'debug': logging.DEBUG,
-                           'quiet': logging.ERROR,
-                           'error': logging.ERROR,
-                           'info': logging.INFO}
+        allowed_levels = {'verbose': logging.DEBUG,
+                          'debug': logging.DEBUG,
+                          'quiet': logging.ERROR,
+                          'error': logging.ERROR,
+                          'info': logging.INFO}
         if level in allowed_levels.keys():
             options['verbosity'] = allowed_levels[level]
         else:
@@ -568,7 +578,6 @@ def parse_config(conffile=None):
             except ValueError:
                 options['verbosity'] = None
 
-
     if config.has_option('cutsky', 'fits') and config.get('cutsky', 'fits'):
         options['fits'] = True
     if config.has_option('cutsky', 'png') and config.get('cutsky', 'png'):
@@ -576,20 +585,20 @@ def parse_config(conffile=None):
     if config.has_option('cutsky', 'votable') and config.get('cutsky', 'votable'):
         options['votable'] = True
     if config.has_option('cutsky', 'outdir'):
-        options['outdir'] = config.get('cutsky','outdir')
+        options['outdir'] = config.get('cutsky', 'outdir')
 
     # Map list, only get the one which will be projected
     # Also check if contours are requested
     mapsToCut = []
     for section in config.sections():
         if section != 'cutsky':
-            if config.has_option(section,'filename'):
+            if config.has_option(section, 'filename'):
                 filename = config.get(section, 'filename')
-                if pattern: #pragma: v2
+                if pattern:  # pragma: v2
                     filename = pattern.sub(rep_key, filename)
                 # doCut options set to True if not present
-                if ( config.has_option(section, 'doCut') and config.getboolean(section,'doCut')) or \
-                   ( not config.has_option(section, 'doCut') ):
+                if (config.has_option(section, 'doCut') and config.getboolean(section, 'doCut')) or \
+                   (not config.has_option(section, 'doCut')):
                     opt = {'legend': section}
 
                     if config.has_option(section, 'doContour'):
@@ -600,6 +609,7 @@ def parse_config(conffile=None):
 
     return options
 
+
 def combine_args(args, config):
     """
     Combine the different sources of arguments (command line,
@@ -608,11 +618,11 @@ def combine_args(args, config):
 
     # This is where the default arguments are set
     pixsize = args.pixsize or config.get('pixsize') or \
-              DEFAULT_pixsize
+        DEFAULT_pixsize
     coordframe = args.coordframe or config.get('coordframe') or \
-                 DEFAULT_coordframe
+        DEFAULT_coordframe
     ctype = args.ctype or config.get('ctype') or \
-                 DEFAULT_ctype
+        DEFAULT_ctype
 
     verbosity = args.verbosity or config.get('verbosity') or logging.INFO
     logger.setLevel(verbosity)
@@ -620,13 +630,13 @@ def combine_args(args, config):
     # npix and radius are mutually exclusive, thus if radius is set we
     # need to compute npix
     if args.radius:
-        args.npix = int(args.radius/(float(pixsize)/60))
+        args.npix = int(args.radius / (float(pixsize) / 60))
 
     npix = args.npix or config.get('npix') or \
-           DEFAULT_npix
+        DEFAULT_npix
 
     maps = args.maps or config.get('maps') or \
-           None
+        None
 
     output = {}
     output['fits'] = args.fits or config.get('fits') or False
@@ -640,17 +650,17 @@ def combine_args(args, config):
     return npix, pixsize, coordframe, ctype, maps, output
 
 
-def main(argv = None):
+def main(argv=None):
     """The main routine."""
 
-    if argv is None: # pragma: no cover
+    if argv is None:  # pragma: no cover
         argv = sys.argv[1:]
 
     from base64 import b64decode
 
     try:
         args = parse_args(argv)
-    except SystemExit: # pragma: no cover
+    except SystemExit:  # pragma: no cover
         sys.exit()
 
     try:
@@ -674,20 +684,23 @@ def main(argv = None):
     for result in results:
         if 'fits' in result.keys() and output['fits']:
             try:
-                hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
-                hdulist.writeto(os.path.join(output['outdir'],result['legend']+'.fits'), clobber=True)
+                hdulist = fits.HDUList([fits.PrimaryHDU(), result['fits']])
+                hdulist.writeto(
+                    os.path.join(output['outdir'], result['legend'] + '.fits'), clobber=True)
             except NotImplementedError:
                 result['fits'].data = result['fits'].data.filled()
-                hdulist = fits.HDUList([ fits.PrimaryHDU(), result['fits'] ])
-                hdulist.writeto(os.path.join(output['outdir'],result['legend']+'.fits'), clobber=True)
+                hdulist = fits.HDUList([fits.PrimaryHDU(), result['fits']])
+                hdulist.writeto(
+                    os.path.join(output['outdir'], result['legend'] + '.fits'), clobber=True)
 
         if 'png' in result.keys() and output['png']:
-            png = open(os.path.join(output['outdir'],result['legend']+'.png'), 'wb')
+            png = open(os.path.join(output['outdir'], result['legend'] + '.png'), 'wb')
             png.write(b64decode(result['png']))
             png.close()
 
-        if 'phot' in result.keys() and output['votable'] :
-            result['phot'].write(os.path.join(output['outdir'],result['legend']+'.xml'), format='votable')
+        if 'phot' in result.keys() and output['votable']:
+            result['phot'].write(os.path.join(output['outdir'], result['legend'] + '.xml'),
+                                 format='votable')
 
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -39,10 +39,11 @@ VALID_PROJ = ['AZP', 'SZP', 'TAN', 'STG', 'SIN',
               'CEA', 'CAR', 'MER', 'COP', 'COE',
               'COD', 'COO', 'SFL', 'PAR', 'MOL',
               'AIT', 'BON', 'PCO', 'TSC', 'CSC',
-              'QSC','HPX','XPH']
+              'QSC', 'HPX', 'XPH']
 
 VALID_GALACTIC = ['galactic', 'g']
-VALID_EQUATORIAL = ['celestial2000','equatorial', 'eq', 'c', 'q','fk4', 'fk5', 'icrs']
+VALID_EQUATORIAL = ['celestial2000', 'equatorial', 'eq', 'c', 'q', 'fk4', 'fk5', 'icrs']
+
 
 def equiv_celestial(frame):
     """Return an equivalent ~astropy.coordfinates.builtin_frames
@@ -57,9 +58,10 @@ def equiv_celestial(frame):
         frame = Galactic()
     elif frame in VALID_EQUATORIAL:
         frame = ICRS()
-    elif frame in [ 'ecliptic', 'e']:
+    elif frame in ['ecliptic', 'e']:
         raise ValueError("Ecliptic coordinate frame not yet supported by astropy")
     return frame
+
 
 def hp_celestial(hp_header):
     """Retrieve the celestial system used in healpix maps. From Healpix documentation this can have 3 forms :
@@ -91,6 +93,7 @@ def hp_celestial(hp_header):
     else:
         raise ValueError("No COORDSYS in header")
 
+
 def hp_is_nest(hp_header):
     """Return True if the healpix header is in nested
 
@@ -117,6 +120,7 @@ def hp_is_nest(hp_header):
     else:
         raise ValueError("Np ordering in healpix header")
 
+
 def build_ctype(coordsys, proj_type):
     """Build a valid spatial ctype for a wcs header
 
@@ -136,15 +140,16 @@ def build_ctype(coordsys, proj_type):
     coordsys = coordsys.lower()
     proj_type = proj_type.upper()
 
-    if not proj_type in VALID_PROJ:
+    if proj_type not in VALID_PROJ:
         raise ValueError('Unvupported projection')
 
     if coordsys in VALID_GALACTIC:
-        return [ coord+proj_type for coord in ['GLON-', 'GLAT-']]
+        return [coord + proj_type for coord in ['GLON-', 'GLAT-']]
     elif coordsys in VALID_EQUATORIAL:
-        return [ coord+proj_type for coord in ['RA---', 'DEC--']]
+        return [coord + proj_type for coord in ['RA---', 'DEC--']]
     else:
         raise ValueError('Unsupported coordsys')
+
 
 def build_WCS(coord, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
@@ -184,7 +189,7 @@ def build_WCS(coord, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_
         raise ValueError('Unsuported coordinate system for the projection')
 
     proj_type = proj_type.upper()
-    if not proj_type in VALID_PROJ:
+    if proj_type not in VALID_PROJ:
         raise ValueError('Unvupported projection')
 
     if npix:
@@ -193,13 +198,14 @@ def build_WCS(coord, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_
     w = WCS(naxis=2)
 
     # CRPIX IS in Fortran convention
-    w.wcs.crpix = np.array(shape_out, dtype=np.float)/2
+    w.wcs.crpix = np.array(shape_out, dtype=np.float) / 2
     w.wcs.cdelt = np.array([-pixsize, pixsize])
     w.wcs.crval = [lon, lat]
 
     w.wcs.ctype = build_ctype(proj_sys, proj_type)
 
     return w
+
 
 def build_WCS_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 3D cube, where the 3rd dimension is an index
@@ -241,19 +247,18 @@ def build_WCS_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_shape_out, npix
         raise ValueError('Unsuported coordinate system for the projection')
 
     proj_type = proj_type.upper()
-    if not proj_type in VALID_PROJ:
+    if proj_type not in VALID_PROJ:
         raise ValueError('Unvupported projection')
-
 
     if npix:
         shape_out = (npix, npix)
 
     w = WCS(naxis=3)
-    w.wcs.crpix = np.append(np.array(shape_out, dtype=np.float)/2, 1)
+    w.wcs.crpix = np.append(np.array(shape_out, dtype=np.float) / 2, 1)
     w.wcs.cdelt = np.append(np.array([-pixsize, pixsize]), 1)
     w.wcs.crval = np.array([lon, lat, index])
 
-    w.wcs.ctype = np.append( build_ctype(proj_sys, proj_type), 'INDEX').tolist()
+    w.wcs.ctype = np.append(build_ctype(proj_sys, proj_type), 'INDEX').tolist()
 
     return w
 
@@ -280,12 +285,12 @@ def _lonlat(build_WCS_func):
 
     def decorator(lon, lat, src_frame='EQUATORIAL', **kargs):
         frame = equiv_celestial(src_frame)
-        coord = SkyCoord(lon,lat, frame=frame, unit="deg")
+        coord = SkyCoord(lon, lat, frame=frame, unit="deg")
         return build_WCS_func(coord, **kargs)
 
     decorator._coord = build_WCS_func
     decorator.__doc__ = str(build_WCS_func.__doc__).split('\n')[0] +\
-    """
+        """
     Parameters
     ----------
     lon,lat : floats
@@ -293,7 +298,7 @@ def _lonlat(build_WCS_func):
     src_frame :  str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the longitude and latitude
     """ + '\n'.join(str(build_WCS.__doc__).split('\n')[6:]) + \
-    """
+        """
     Notes
     -----
     You can access a function using only catalogs with the ._coord() method
@@ -303,7 +308,8 @@ def _lonlat(build_WCS_func):
 build_WCS_lonlat = _lonlat(build_WCS)
 build_WCS_cube_lonlat = _lonlat(build_WCS_cube)
 
-def build_WCS_2pts(coords, pixsize=None, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN', relative_pos=(2./5, 3./5)):
+
+def build_WCS_2pts(coords, pixsize=None, shape_out=DEFAULT_shape_out, npix=None, proj_sys='EQUATORIAL', proj_type='TAN', relative_pos=(2. / 5, 3. / 5)):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
 
     Parameters
@@ -346,7 +352,7 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=DEFAULT_shape_out, npix=None,
     if not pixsize:
         # Compute pixsize from relative_pos and distance between
         # sources
-        pix_distance = np.array(relative_pos)*shape_out[1]
+        pix_distance = np.array(relative_pos) * shape_out[1]
         pix_distance = pix_distance.max() - pix_distance.min()
         ang_distance = coords[0].separation(coords[1])
         pixsize = ang_distance.deg / pix_distance
@@ -357,39 +363,41 @@ def build_WCS_2pts(coords, pixsize=None, shape_out=DEFAULT_shape_out, npix=None,
         pix_distance = ang_distance.deg / pixsize
         relative_pos = pix_distance / shape_out[1]
         # Center it
-        relative_pos = 0.5+np.array([-1.,1])*relative_pos/2
+        relative_pos = 0.5 + np.array([-1., 1]) * relative_pos / 2
 
     proj_sys = proj_sys.lower()
     if proj_sys in VALID_EQUATORIAL:
-        coords = [ coord.transform_to(ICRS) for coord in coords]
+        coords = [coord.transform_to(ICRS) for coord in coords]
         lon = coords[0].ra.deg
         lat = coords[0].dec.deg
     elif proj_sys in VALID_GALACTIC:
-        coords = [ coord.transform_to(Galactic) for coord in coords]
+        coords = [coord.transform_to(Galactic) for coord in coords]
         lon = coords[0].l.deg
         lat = coords[0].b.deg
     else:
         raise ValueError('Unsuported coordinate system for the projection')
 
     proj_type = proj_type.upper()
-    if not proj_type in VALID_PROJ:
+    if proj_type not in VALID_PROJ:
         raise ValueError('Unvupported projection')
 
     # Put the first source on the relative_pos[0]
-    w.wcs.crpix = np.array([relative_pos[0],1./2], dtype=np.float)*(np.array(shape_out, dtype=np.float)[::-1])
+    w.wcs.crpix = np.array([relative_pos[0], 1. / 2], dtype=np.float) * (
+        np.array(shape_out, dtype=np.float)[::-1])
     w.wcs.crval = [lon, lat]
 
     w.wcs.cdelt = np.array([-pixsize, pixsize])
     # Computes the on-sky position angle (East of North) between this SkyCoord and another.
-    rot_angle = (coords[0].position_angle(coords[1])+Angle(90, unit='deg')).wrap_at('180d')
+    rot_angle = (coords[0].position_angle(coords[1]) + Angle(90, unit='deg')).wrap_at('180d')
 
-    logging.debug('... rotating frame with %s deg'%rot_angle.degree)
-    w.wcs.pc = [ [np.cos(rot_angle.radian) , np.sin(-rot_angle.radian)],
-                 [np.sin(rot_angle.radian) , np.cos(rot_angle.radian)] ]
+    logging.debug('... rotating frame with %s deg' % rot_angle.degree)
+    w.wcs.pc = [[np.cos(rot_angle.radian), np.sin(-rot_angle.radian)],
+                [np.sin(rot_angle.radian), np.cos(rot_angle.radian)]]
 
     w.wcs.ctype = build_ctype(proj_sys, proj_type)
 
     return w
+
 
 def hp_to_wcs(hp_map, hp_header, w, shape_out=DEFAULT_shape_out, npix=None, order=0):
     """Project an Healpix map on a wcs header, using nearest neighbors.
@@ -425,37 +433,40 @@ def hp_to_wcs(hp_map, hp_header, w, shape_out=DEFAULT_shape_out, npix=None, orde
     # standards this is 0.
     #
     # This as we are using the C convention, the center of the first pixel is -0.5, -0.5
-    yy, xx = np.indices(shape_out)-0.5
+    yy, xx = np.indices(shape_out) - 0.5
 
-
-    alon, alat = w.wcs_pix2world(xx,yy,0)
-    mask = ~np.logical_or(np.isnan(alon),np.isnan(alat)) # if pixel lies outside of projected area
+    alon, alat = w.wcs_pix2world(xx, yy, 0)
+    # mask for pixels lying outside of projected area
+    mask = ~np.logical_or(np.isnan(alon), np.isnan(alat))
     proj_map = np.ma.array(np.zeros(shape_out), mask=~mask, fill_value=np.nan)
 
     # Determine if we need a rotation for different coordinate systems
-    frame_in =  hp_celestial(hp_header)
+    frame_in = hp_celestial(hp_header)
     frame_out = wcs_utils.wcs_to_celestial_frame(w)
 
     if not frame_in.is_equivalent_frame(frame_out):
         logging.debug('... converting coordinate system')
-        coords = frame_out.realize_frame(UnitSphericalRepresentation(alon*u.deg, alat*u.deg)).transform_to(frame_in)
+        coords = frame_out.realize_frame(
+            UnitSphericalRepresentation(alon * u.deg, alat * u.deg)).transform_to(frame_in)
         alon = coords.data.lon.deg
         alat = coords.data.lat.deg
 
     # Healpix conventions...
     phi = np.radians(alon)
-    theta = np.radians(90-alat)
-
+    theta = np.radians(90 - alat)
 
     if order == 0:
-        ipix = hp.ang2pix(hp.npix2nside(len(hp_map)), theta[mask], phi[mask], nest=hp_is_nest(hp_header))
+        ipix = hp.ang2pix(hp.npix2nside(len(hp_map)), theta[
+                          mask], phi[mask], nest=hp_is_nest(hp_header))
         proj_map[mask] = hp_map[ipix]
     elif order == 1:
-        proj_map[mask] = hp.get_interp_val(hp_map, theta[mask], phi[mask], nest=hp_is_nest(hp_header))
+        proj_map[mask] = hp.get_interp_val(
+            hp_map, theta[mask], phi[mask], nest=hp_is_nest(hp_header))
     else:
         raise ValueError("Unsupported order for the interpolation")
 
     return proj_map.filled()
+
 
 def hp_to_wcs_ipx(hp_header, w, shape_out=DEFAULT_shape_out, npix=None):
     """Return the indexes of pixels of a given wcs and shape_out,
@@ -497,29 +508,32 @@ def hp_to_wcs_ipx(hp_header, w, shape_out=DEFAULT_shape_out, npix=None):
     # standards this is 0.
     #
     # This as we are using the C convention, the center of the first pixel is -0.5, -0.5
-    yy, xx = np.indices(shape_out)-0.5
+    yy, xx = np.indices(shape_out) - 0.5
 
-    alon, alat = w.wcs_pix2world(xx,yy,0)
-    mask = ~np.logical_or(np.isnan(alon),np.isnan(alat)) # if pixel lies outside of projected area
+    alon, alat = w.wcs_pix2world(xx, yy, 0)
+    # mask for pixels lying outside of projected area
+    mask = ~np.logical_or(np.isnan(alon), np.isnan(alat))
 
-    frame_in =  hp_celestial(hp_header)
+    frame_in = hp_celestial(hp_header)
     frame_out = wcs_utils.wcs_to_celestial_frame(w)
 
     nside = hp_header['NSIDE']
 
     if not frame_in.is_equivalent_frame(frame_out):
         logging.debug('... converting coordinate system')
-        coords = frame_out.realize_frame(UnitSphericalRepresentation(alon*u.deg, alat*u.deg)).transform_to(frame_in)
+        coords = frame_out.realize_frame(
+            UnitSphericalRepresentation(alon * u.deg, alat * u.deg)).transform_to(frame_in)
         alon = coords.data.lon.deg
         alat = coords.data.lat.deg
 
     # Healpix conventions...
     phi = np.radians(alon)
-    theta = np.radians(90-alat)
+    theta = np.radians(90 - alat)
 
     ipix = hp.ang2pix(nside, theta[mask], phi[mask], nest=hp_is_nest(hp_header))
 
     return mask, ipix
+
 
 def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALACTIC', proj_type='TAN', order=0, hdu=False):
     """Project an healpix map at a single given position
@@ -561,6 +575,7 @@ def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALAC
     else:
         return proj_map
 
+
 def gen_hpmap(maps):
     """Generator function for large maps and low memory system
 
@@ -582,6 +597,7 @@ def gen_hpmap(maps):
             iMap = hp.ma(iMap)
         yield (filename, iMap, iHeader)
 
+
 def build_hpmap(filenames, low_mem=True):
     """From a filename list, build a tuple usable with gen_hmap()
 
@@ -600,12 +616,12 @@ def build_hpmap(filenames, low_mem=True):
     hp_maps = []
     for filename in filenames:
         hp_header = fits.getheader(filename, 1)
-        if low_mem == True:
+        if low_mem is True:
             hp_map = filename
         else:
             hp_map = hp.read_map(filename, verbose=False)
             hp_map = hp.ma(hp_map)
-        hp_maps.append( (filename, hp_map, hp_header ) )
+        hp_maps.append((filename, hp_map, hp_header))
     return hp_maps
 
 
@@ -625,4 +641,4 @@ def hpmap_key(hp_map):
     """
     filename, iMap, iHeader = hp_map
 
-    return "%s_%s_%s"%(iHeader['NSIDE'], iHeader['ORDERING'],  hp_celestial(iHeader).name)
+    return "%s_%s_%s" % (iHeader['NSIDE'], iHeader['ORDERING'], hp_celestial(iHeader).name)
