@@ -5,9 +5,6 @@
 # LGPL License - see attached LICENSE file
 # Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
 
-from .hp_helper import *
-from .cutsky import *
-
 r"""
  _   _ ____________          _
 | | | || ___ \ ___ \        (_)
@@ -22,3 +19,6 @@ HealPix Projection
 """
 
 __version__ = '0.4.0'
+
+from .hp_helper import *
+from .cutsky import *

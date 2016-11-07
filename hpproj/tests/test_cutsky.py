@@ -13,7 +13,7 @@ import pytest
 
 from .. import parse_args, parse_config, combine_args
 from .. import CutSky, cutsky, main, to_new_maps
-from .. import DEFAULT_npix, DEFAULT_coordframe, DEFAULT_pixsize, DEFAULT_ctype
+from .. import DEFAULT_NPIX, DEFAULT_COORDFRAME, DEFAULT_PIXSIZE, DEFAULT_CTYPE
 
 import numpy as np
 import numpy.testing as npt
@@ -38,73 +38,73 @@ class TestParseArgs:
     def test_parse_args_defaults(self):
         args = parse_args('0.0 0.0 '.split())
 
-        assert(args.lon == 0.0)
-        assert(args.lat == 0.0)
-        assert(args.coordframe == None)
-        assert(args.ctype == None)
-        assert(args.npix == None)
-        assert(args.mapfilenames == None)
-        assert(args.maps == None)
-        assert(args.pixsize == None)
-        assert(args.radius == None)
+        assert args.lon == 0.0
+        assert args.lat == 0.0
+        assert args.coordframe is None
+        assert args.ctype is None
+        assert args.npix is None
+        assert args.mapfilenames is None
+        assert args.maps is None
+        assert args.pixsize is None
+        assert args.radius is None
 
-        assert(args.verbose == False)
-        assert(args.quiet == False)
-        assert(args.verbosity == None)
+        assert args.verbose is False
+        assert args.quiet is False
+        assert args.verbosity is None
 
-        assert(args.fits == False)
-        assert(args.png == False)
-        assert(args.votable == False)
+        assert args.fits is False
+        assert args.png is False
+        assert args.votable is False
 
     def test_parse_args_mapfilenames(self):
         args = parse_args('0.0 0.0 --mapfilenames blah1 blah2'.split())
 
-        assert(args.mapfilenames == ['blah1', 'blah2'])
-        assert(args.maps == [('blah1', {'legend': 'blah1'} ),
-                             ('blah2', {'legend': 'blah2'} ) ]  )
+        assert args.mapfilenames == ['blah1', 'blah2']
+        assert args.maps == [('blah1', {'legend': 'blah1'}),
+                             ('blah2', {'legend': 'blah2'})]
 
     @pytest.mark.parametrize("verbosity, level",
-                             [ ('', None),
-                               ('--verbose', logging.DEBUG),
-                               ('--quiet', logging.ERROR)
-                             ] )
+                             [('', None),
+                              ('--verbose', logging.DEBUG),
+                              ('--quiet', logging.ERROR)
+                             ])
     def test_parse_args_verbosity(self, verbosity, level):
         args = parse_args(('0.0 0.0 '+verbosity).split())
-        assert(args.verbosity == level)
+        assert args.verbosity == level
 
 class TestParserConfig:
-    def test_parser_config_found(self,tmpdir):
+    def test_parser_config_found(self, tmpdir):
         # Insure empty file
         conffile = tmpdir.mkdir("conf").join("cutsky.cfg")
         with pytest.raises(FileNotFoundError):
             config = parse_config(str(conffile))
 
     @pytest.fixture(scope='session')
-    def generate_default_conffile(self,tmpdir_factory):
+    def generate_default_conffile(self, tmpdir_factory):
         conffile = tmpdir_factory.mktemp("conf").join("cutsky.cfg")
         config = ConfigParser()
         config.add_section('cutsky')
-        config.set('cutsky','npix', str(DEFAULT_npix))
-        config.set('cutsky','pixsize', str(DEFAULT_pixsize))
-        config.set('cutsky','coordframe', DEFAULT_coordframe)
-        config.set('cutsky','ctype', DEFAULT_ctype)
+        config.set('cutsky', 'npix', str(DEFAULT_NPIX))
+        config.set('cutsky', 'pixsize', str(DEFAULT_PIXSIZE))
+        config.set('cutsky', 'coordframe', DEFAULT_COORDFRAME)
+        config.set('cutsky', 'ctype', DEFAULT_CTYPE)
         config.write(conffile.open(mode='w', ensure=True))
 
         return conffile, config
 
-    def test_parser_config(self,generate_default_conffile):
+    def test_parser_config(self, generate_default_conffile):
 
         conffile, config = generate_default_conffile
         test_config = parse_config(str(conffile))
 
-        assert(test_config.get('npix') == DEFAULT_npix)
-        assert(test_config.get('pixsize') == DEFAULT_pixsize)
-        assert(test_config.get('coordframe') == DEFAULT_coordframe)
-        assert(test_config.get('ctype') == DEFAULT_ctype)
-        assert(test_config.get('verbosity') == None)
-        assert(test_config.get('fits') == None)
-        assert(test_config.get('png') == None)
-        assert(test_config.get('votable') == None)
+        assert test_config.get('npix') == DEFAULT_NPIX
+        assert test_config.get('pixsize') == DEFAULT_PIXSIZE
+        assert test_config.get('coordframe') == DEFAULT_COORDFRAME
+        assert test_config.get('ctype') == DEFAULT_CTYPE
+        assert test_config.get('verbosity') is None
+        assert test_config.get('fits') is None
+        assert test_config.get('png') is None
+        assert test_config.get('votable') is None
 
     def test_parser_config_maps(self, generate_default_conffile):
 
@@ -129,12 +129,12 @@ class TestParserConfig:
         config.write(conffile.open(mode='w', ensure=True))
         test_config = parse_config(str(conffile))
 
-        assert(test_config.get('maps') == [('filename1.fits',
-                                            { 'legend': 'map 1',
-                                              'doContour':True} ),
+        assert test_config.get('maps') == [('filename1.fits',
+                                            {'legend': 'map 1',
+                                             'doContour':True}),
                                            ('filename3.fits',
-                                            {'legend': 'map 3'} )
-        ] )
+                                            {'legend': 'map 3'})
+                                          ]
 
     def test_parser_config_maps_interpolation(self, generate_default_conffile):
         conffile, config = generate_default_conffile
@@ -146,30 +146,30 @@ class TestParserConfig:
         config.write(conffile.open(mode='w', ensure=True))
         test_config = parse_config(str(conffile))
 
-        assert(test_config.get('maps')[2] == ('toto/filename4.fits', {'legend': 'map 4'}))
+        assert test_config.get('maps')[2] == ('toto/filename4.fits', {'legend': 'map 4'})
 
     @pytest.mark.parametrize("verbosity, level",
-                             [ ('verbose', logging.DEBUG),
-                               ('debug', logging.DEBUG),
-                               ('quiet', logging.ERROR),
-                               ('error', logging.ERROR),
-                               ('info', logging.INFO),
-                               (str(logging.INFO), logging.INFO),
-                               ('aze', None )
-                             ] )
+                             [('verbose', logging.DEBUG),
+                              ('debug', logging.DEBUG),
+                              ('quiet', logging.ERROR),
+                              ('error', logging.ERROR),
+                              ('info', logging.INFO),
+                              (str(logging.INFO), logging.INFO),
+                              ('aze', None)
+                             ])
     def test_parser_verbosity(self, generate_default_conffile, verbosity, level):
         conffile, config = generate_default_conffile
         config.set('cutsky', 'verbosity', verbosity)
         config.write(conffile.open(mode='w', ensure=True))
         test_config = parse_config(str(conffile))
 
-        assert(test_config.get('verbosity') == level)
+        assert test_config.get('verbosity') == level
 
     @pytest.mark.parametrize("key, value",
-                             [ ('fits', True),
-                               ('png', True),
-                               ('votable', True),
-                               ('outdir', 'toto')
+                             [('fits', True),
+                              ('png', True),
+                              ('votable', True),
+                              ('outdir', 'toto')
                              ])
     def test_parser_output(self, generate_default_conffile, key, value):
         conffile, config = generate_default_conffile
@@ -177,7 +177,7 @@ class TestParserConfig:
         config.write(conffile.open(mode='w', ensure=True))
         test_config = parse_config(str(conffile))
 
-        assert(test_config.get(key) == value)
+        assert test_config.get(key) == value
 
 
 class TestCombineArgs:
@@ -185,15 +185,15 @@ class TestCombineArgs:
         args = parse_args('0.0 0.0 '.split())
         (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, {})
 
-        assert(npix == DEFAULT_npix)
-        assert(coordframe == DEFAULT_coordframe)
-        assert(pixsize == DEFAULT_pixsize)
+        assert npix == DEFAULT_NPIX
+        assert coordframe == DEFAULT_COORDFRAME
+        assert pixsize == DEFAULT_PIXSIZE
 
     def test_combine_args_radius(self):
         args = parse_args('0.0 0.0 --pixsize 1 --radius 60'.split())
         (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, {})
-        assert(pixsize == 1)
-        assert(npix == 3600)
+        assert pixsize == 1
+        assert npix == 3600
 
     @pytest.mark.parametrize("cmd, conf, level",
                              [('--verbose', {},
@@ -208,7 +208,7 @@ class TestCombineArgs:
     def test_combine_args_verbosity(self, cmd, conf, level):
         args = parse_args(('0.0 0.0 '+cmd).split())
         (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, conf)
-        assert(logger.level == level)
+        assert logger.level == level
 
     @pytest.mark.parametrize("cmd, conf, result",
                              [('--png', {},
@@ -224,15 +224,15 @@ class TestCombineArgs:
     def test_combine_args_output(self, cmd, conf, result):
         args = parse_args(('0.0 0.0 '+cmd).split())
         (npix, pixsize, coordframe, ctype, maps, output) = combine_args(args, conf)
-        assert(output == result)
+        assert output == result
 
 
 def test_CutSky_init_exception():
     with pytest.raises(FileNotFoundError):
-        cutsky = CutSky()
+        my_cutsky = CutSky()
 
     with pytest.raises(IOError):
-        custky = CutSky(maps=[('toto.fits', {})])
+        my_custky = CutSky(maps=[('toto.fits', {})])
 
 @pytest.fixture(scope='session')
 def generate_hpmap(tmpdir_factory):
@@ -241,15 +241,15 @@ def generate_hpmap(tmpdir_factory):
 
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside))
-    hp_header={'NSIDE': nside,
-               'ORDERING': 'RING',
-               'COORDSYS': 'C'}
-    hp_key = "%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],  hp_celestial(hp_header).name)
+    hp_header = {'NSIDE': nside,
+                 'ORDERING': 'RING',
+                 'COORDSYS': 'C'}
+    hp_key = "%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'], hp_celestial(hp_header).name)
 
     tmpfile = tmpdir_factory.mktemp("data").join("tmpfile.fits")
 
-    hp.write_map(str(tmpfile), hp_map, nest = hp_is_nest(hp_header), extra_header = hp_header.items())
-    return ([(str(tmpfile), {'legend': 'tmpfile'}) ], hp_map, hp_key)
+    hp.write_map(str(tmpfile), hp_map, nest=hp_is_nest(hp_header), extra_header=hp_header.items())
+    return ([(str(tmpfile), {'legend': 'tmpfile'})], hp_map, hp_key)
 
 # TODO : what happen when file do not exist or are not healpix maps
 def test_CutSky_init(generate_hpmap):
@@ -257,30 +257,30 @@ def test_CutSky_init(generate_hpmap):
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
 
-    cutsky = CutSky(maps=hp_map, low_mem=True)
-    assert(cutsky.npix == DEFAULT_npix)
-    assert(cutsky.pixsize == DEFAULT_pixsize)
-    assert(cutsky.ctype == DEFAULT_ctype)
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    assert my_cutsky.npix == DEFAULT_NPIX
+    assert my_cutsky.pixsize == DEFAULT_PIXSIZE
+    assert my_cutsky.ctype == DEFAULT_CTYPE
 
-    assert(cutsky.maps[0][0] == filename)
-    assert(cutsky.maps[0][1] == filename)
-    assert(cutsky.maps[0][2]['legend'] == opt['legend'])
+    assert my_cutsky.maps[0][0] == filename
+    assert my_cutsky.maps[0][1] == filename
+    assert my_cutsky.maps[0][2]['legend'] == opt['legend']
 
     hp_map[0][1]['doContour'] = True
-    cutsky = CutSky(maps=hp_map, low_mem=False)
-    npt.assert_array_equal(cutsky.maps[0][1], hp_map_data)
-    assert(cutsky.maps[0][2]['doContour'] == True)
+    my_cutsky = CutSky(maps=hp_map, low_mem=False)
+    npt.assert_array_equal(my_cutsky.maps[0][1], hp_map_data)
+    assert my_cutsky.maps[0][2]['doContour'] is True
 
 def test_CutSky_cut_fits(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
 
-    cutsky = CutSky(maps=hp_map, low_mem=True)
-    result = cutsky.cut_fits([0,0])
-    assert(len(result) == 1)
-    assert(result[0]['legend'] == opt['legend'])
-    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    result = my_cutsky.cut_fits([0, 0])
+    assert len(result) == 1
+    assert result[0]['legend'] == opt['legend']
+    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
 
 
 def test_CutSky_cut_fits_selection(generate_hpmap):
@@ -293,22 +293,22 @@ def test_CutSky_cut_fits_selection(generate_hpmap):
     import shutil
     shutil.copy(filename, filename2)
 
-    hp_maps = [ hp_map[0], (filename2, opt2) ]
-    cutsky = CutSky(maps=hp_maps, low_mem=True)
-    result = cutsky.cut_fits([0,0])
-    assert(len(result) == 2)
+    hp_maps = [hp_map[0], (filename2, opt2)]
+    my_cutsky = CutSky(maps=hp_maps, low_mem=True)
+    result = my_cutsky.cut_fits([0, 0])
+    assert len(result) == 2
 
-    result = cutsky.cut_fits([0,0], maps_selection=['tmpfile2'])
-    assert(len(result) == 1)
-    assert(result[0]['legend'] == 'tmpfile2')
+    result = my_cutsky.cut_fits([0, 0], maps_selection=['tmpfile2'])
+    assert len(result) == 1
+    assert result[0]['legend'] == 'tmpfile2'
 
-    result = cutsky.cut_fits([0,0], maps_selection=[filename2])
-    assert(len(result) == 1)
-    assert(result[0]['legend'] == 'tmpfile2')
+    result = my_cutsky.cut_fits([0, 0], maps_selection=[filename2])
+    assert len(result) == 1
+    assert result[0]['legend'] == 'tmpfile2'
 
-    result = cutsky.cut_png([0,0], maps_selection=[filename2])
-    assert(len(result) == 1)
-    assert(result[0]['legend'] == 'tmpfile2')
+    result = my_cutsky.cut_png([0, 0], maps_selection=[filename2])
+    assert len(result) == 1
+    assert result[0]['legend'] == 'tmpfile2'
 
 def test_CutSky_cut_png(generate_hpmap):
 
@@ -317,90 +317,90 @@ def test_CutSky_cut_png(generate_hpmap):
     hp_map[0][1]['doContour'] = True
     # Will actually not produce a contour in this situation
 
-    cutsky = CutSky(maps=hp_map, low_mem=True)
-    result = cutsky.cut_png([0,0])
-    assert(len(result) == 1)
-    assert(result[0]['legend'] == opt['legend'])
-    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
-    assert(result[0]['fits'].header['doContour'] == True)
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    result = my_cutsky.cut_png([0, 0])
+    assert len(result) == 1
+    assert result[0]['legend'] == opt['legend']
+    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
+    assert result[0]['fits'].header['doContour'] is True
     # CHECK png .... ?
 
-    cutsky = CutSky(maps=hp_map, low_mem=True)
-    result2 = cutsky.cut_fits([0,0])
-    result2 = cutsky.cut_png([0,0])
-    assert(result[0]['legend'] == result2[0]['legend'])
-    npt.assert_array_equal(result[0]['fits'].data.data , result2[0]['fits'].data.data)
-    assert(result[0]['png'] == result2[0]['png'])
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    result2 = my_cutsky.cut_fits([0, 0])
+    result2 = my_cutsky.cut_png([0, 0])
+    assert result[0]['legend'] == result2[0]['legend']
+    npt.assert_array_equal(result[0]['fits'].data.data, result2[0]['fits'].data.data)
+    assert result[0]['png'] == result2[0]['png']
 
 def test_CutSky_cut_phot(generate_hpmap):
     hp_map, hp_map_data, hp_key = generate_hpmap
     filename, opt = hp_map[0]
     hp_map[0][1]['doContour'] = True
 
-    cutsky = CutSky(maps=hp_map, low_mem=True)
-    result = cutsky.cut_phot([0,0])
-    assert(len(result) == 1)
-    assert(result[0]['legend'] == opt['legend'])
-    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((cutsky.npix,cutsky.npix)))
-    assert(result[0]['fits'].header['doContour'] == True)
-    assert(result[0]['phot'][0][0] == 0.0)
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    result = my_cutsky.cut_phot([0, 0])
+    assert len(result) == 1
+    assert result[0]['legend'] == opt['legend']
+    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
+    assert result[0]['fits'].header['doContour'] is True
+    assert result[0]['phot'][0][0] == 0.0
 
-    cutsky = CutSky(maps=hp_map, low_mem=True)
-    result2 = cutsky.cut_fits([0,0])
-    result2 = cutsky.cut_phot([0,0])
-    assert(result[0]['legend'] == result2[0]['legend'])
-    npt.assert_array_equal(result[0]['fits'].data.data , result2[0]['fits'].data.data)
-    assert(result[0]['phot'][0][0] == result2[0]['phot'][0][0])
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    result2 = my_cutsky.cut_fits([0, 0])
+    result2 = my_cutsky.cut_phot([0, 0])
+    assert result[0]['legend'] == result2[0]['legend']
+    npt.assert_array_equal(result[0]['fits'].data.data, result2[0]['fits'].data.data)
+    assert result[0]['phot'][0][0] == result2[0]['phot'][0][0]
 
 class TestCutSky:
 
     def test_to_new_maps(self):
         old_maps = {'legend': {'filename': 'full_filename_to_healpix_map.fits',
-                               'doContour': True } }
+                               'doContour': True}}
 
         new_maps = to_new_maps(old_maps)
-        assert(len(new_maps) == 1)
-        assert(isinstance(new_maps[0], tuple))
-        assert(new_maps[0][0] == old_maps['legend']['filename'])
-        assert(new_maps[0][1] == {'legend': 'legend', 'doContour': True})
+        assert len(new_maps) == 1
+        assert isinstance(new_maps[0], tuple)
+        assert new_maps[0][0] == old_maps['legend']['filename']
+        assert new_maps[0][1] == {'legend': 'legend', 'doContour': True}
 
     def test_cutsky_exception(self):
         with pytest.raises(ValueError):
             sub_map = cutsky()
         with pytest.raises(FileNotFoundError):
-            sub_map = cutsky(lonlat=[0,0])
+            sub_map = cutsky(lonlat=[0, 0])
 
-    def test_cutsky(self,generate_hpmap):
+    def test_cutsky(self, generate_hpmap):
 
         hp_map, hp_map_data, hp_key = generate_hpmap
         filename, opt = hp_map[0]
         old_hpmap = {opt['legend']: {'filename': filename, 'doContour': True}}
 
-        result = cutsky([0,0], old_hpmap)
-        assert(len(result) == 1)
-        assert(result[0]['legend'] == opt['legend'])
-        npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_npix, DEFAULT_npix)))
-        assert(result[0]['fits'].header['doContour'] == True)
-        assert(result[0]['phot'][0][0] == 0.0)
+        result = cutsky([0, 0], old_hpmap)
+        assert len(result) == 1
+        assert result[0]['legend'] == opt['legend']
+        npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
+        assert result[0]['fits'].header['doContour'] is True
+        assert result[0]['phot'][0][0] == 0.0
 
-    def test_main(self,generate_hpmap):
+    def test_main(self, generate_hpmap):
 
         hp_map, hp_map_data, hp_key = generate_hpmap
         filename, opt = hp_map[0]
 
         outdir = os.path.join(os.path.dirname(filename), 'output')
-        png_file = os.path.join(outdir,opt['legend']+'.png')
-        fits_file = os.path.join(outdir,opt['legend']+'.fits')
-        xml_file = os.path.join(outdir,opt['legend']+'.xml')
+        png_file = os.path.join(outdir, opt['legend']+'.png')
+        fits_file = os.path.join(outdir, opt['legend']+'.fits')
+        xml_file = os.path.join(outdir, opt['legend']+'.xml')
 
         args = "0.0 0.0"+ \
                " --mapfilenames "+ filename + \
                " --outdir "+ outdir
 
         exit_code = main(args.split())
-        assert(os.path.exists(png_file))
-        assert(not os.path.exists(fits_file))
-        assert(not os.path.exists(xml_file))
+        assert os.path.exists(png_file)
+        assert not os.path.exists(fits_file)
+        assert not os.path.exists(xml_file)
         os.remove(png_file)
 
         args = "0.0 0.0"+ \
@@ -409,9 +409,9 @@ class TestCutSky:
                " --outdir "+ outdir
 
         exit_code = main(args.split())
-        assert(not os.path.exists(png_file))
-        assert(os.path.exists(fits_file))
-        assert(not os.path.exists(xml_file))
+        assert not os.path.exists(png_file)
+        assert os.path.exists(fits_file)
+        assert not os.path.exists(xml_file)
         os.remove(fits_file)
 
         args = "0.0 0.0"+ \
@@ -420,6 +420,6 @@ class TestCutSky:
                " --outdir "+ outdir
 
         exit_code = main(args.split())
-        assert(not os.path.exists(png_file))
-        assert(os.path.exists(fits_file))
-        assert(os.path.exists(xml_file))
+        assert not os.path.exists(png_file)
+        assert os.path.exists(fits_file)
+        assert os.path.exists(xml_file)
