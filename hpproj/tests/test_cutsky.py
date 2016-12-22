@@ -343,7 +343,7 @@ def test_CutSky_cut_phot(generate_hpmap):
     assert result[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
     assert result[0]['fits'].header['doContour'] is True
-    assert result[0]['phot'][0][0] == 0.0
+    assert result[0]['phot'][0]['aperture_sum'] == 0.0
 
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
     result2 = my_cutsky.cut_fits([0, 0])
@@ -381,7 +381,7 @@ class TestCutSky:
         assert result[0]['legend'] == opt['legend']
         npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
         assert result[0]['fits'].header['doContour'] is True
-        assert result[0]['phot'][0][0] == 0.0
+        assert result[0]['phot'][0]['aperture_sum'] == 0.0
 
     def test_main(self, generate_hpmap):
 
