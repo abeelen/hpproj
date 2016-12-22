@@ -29,9 +29,11 @@ import numpy as np
 # except ImportError: # pragma: no cover
 from astropy.wcs import WCS
 
-from astropy.io import fits
 from astropy import units as u
+from astropy.io import fits
+from astropy.table import Table
 from astropy.coordinates import SkyCoord
+
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
@@ -702,7 +704,9 @@ def main(argv=None):
             png.close()
 
         if 'phot' in result.keys() and output['votable']:
-            result['phot'].write(os.path.join(output['outdir'], result['legend'] + '.xml'),
+            # Need to cast into astropy Table before writing to votable
+            phot = Table(result['phot'])
+            phot.write(os.path.join(output['outdir'], result['legend'] + '.xml'),
                                  format='votable')
 
 if __name__ == '__main__':
