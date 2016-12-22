@@ -17,11 +17,6 @@ env:
 
 matrix:
     include:
-          # Do a coverage test in Python 2.
-        - python: 2.7
-          env: SETUP_CMD='test --coverage'
-          
-          
         # Try Astropy development version
         - python: 2.7
           env: ASTROPY_VERSION=development
