@@ -5,4 +5,4 @@
 # LGPL License - see attached LICENSE file
 # Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
 
-from hpproj import *
+from .hpproj import *
