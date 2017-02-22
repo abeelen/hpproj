@@ -114,7 +114,7 @@ class TestBuildWCS:
         assert wcs.wcs.naxis == 2
         npt.assert_array_equal(wcs.wcs.crval, [0, 0])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256, 512])
+        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
 
 
@@ -123,7 +123,7 @@ class TestBuildWCS:
         assert wcs.wcs.naxis == 2
         npt.assert_array_equal(wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256, 256])
+        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 256.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])
 
         coord = coord.galactic
@@ -133,7 +133,7 @@ class TestBuildWCS:
         # Unfortunatly astropy coordinate transformation are that precise
         npt.assert_allclose(wcs.wcs.crval, [0, 0], atol=5e-15)
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256, 512])
+        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
 
     def test_build_wcs_cube_exception(self):
@@ -153,7 +153,7 @@ class TestBuildWCS:
         assert wcs.wcs.naxis == 3
         npt.assert_array_equal(wcs.wcs.crval, [0, 0, 1])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256, 512, 1])
+        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5, 1])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
 
         wcs = build_wcs_cube(coord, index, pixsize, shape_out, npix=512, proj_sys='G')
@@ -161,7 +161,7 @@ class TestBuildWCS:
         assert wcs.wcs.naxis == 3
         npt.assert_array_equal(wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg, 1])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256, 256, 1])
+        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 256.5, 1])
         npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN', 'INDEX'])
 
         coord = coord.galactic
@@ -171,7 +171,7 @@ class TestBuildWCS:
         # Unfortunatly astropy coordinate transformation are that precise
         npt.assert_allclose(wcs.wcs.crval, [0, 0, 1], atol=5e-15)
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256, 512, 1])
+        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5, 1])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
 
     def test_decorator_lonlat(self):
@@ -289,14 +289,14 @@ def test_hp_to_wcs():
     hp_map[ipix] = 0
     sub_map = hp_to_wcs(hp_map, hp_header, wcs, shape_out=shape_out, order=0)
     i_x, i_y = wcs.all_world2pix(lon, lat, 0)
-    assert sub_map[int(np.ceil(i_y)), int(np.ceil(i_x))] == 0
+    assert sub_map[int(np.floor(i_y+0.5)), int(np.floor(i_x+0.5))] == 0
 
     # Test different frame
     wcs = build_wcs(coord, pixsize, shape_out, proj_sys="G")
     sub_map = hp_to_wcs(hp_map, hp_header, wcs, shape_out=shape_out)
     lon, lat = coord.galactic.l.deg, coord.galactic.b.deg
     i_x, i_y = wcs.all_world2pix(lon, lat, 0)
-    assert sub_map[int(np.ceil(i_y)), int(np.ceil(i_x))] == 0
+    assert sub_map[int(np.floor(i_y+0.5)), int(np.floor(i_x+0.5))] == 0
 
 
 def test_hp_to_wcs_ipx():

@@ -198,7 +198,7 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_
     wcs = WCS(naxis=2)
 
     # CRPIX IS in Fortran convention
-    wcs.wcs.crpix = np.array(shape_out, dtype=np.float) / 2
+    wcs.wcs.crpix = (np.array(shape_out, dtype=np.float)+1) / 2
     wcs.wcs.cdelt = np.array([-pixsize, pixsize])
     wcs.wcs.crval = [lon, lat]
 
@@ -254,7 +254,7 @@ def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix
         shape_out = (npix, npix)
 
     wcs = WCS(naxis=3)
-    wcs.wcs.crpix = np.append(np.array(shape_out, dtype=np.float) / 2, 1)
+    wcs.wcs.crpix = np.append((np.array(shape_out, dtype=np.float)+1) / 2, 1)
     wcs.wcs.cdelt = np.append(np.array([-pixsize, pixsize]), 1)
     wcs.wcs.crval = np.array([lon, lat, index])
 
@@ -433,8 +433,8 @@ def hp_to_wcs(hp_map, hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, or
     # image.In FITS and Fortran standards, this is 1.  In Numpy and C
     # standards this is 0.
     #
-    # This as we are using the C convention, the center of the first pixel is -0.5, -0.5
-    y_tab, x_tab = np.indices(shape_out) - 0.5
+    # This as we are using the C convention, the center of the first pixel is 0, 0
+    y_tab, x_tab = np.indices(shape_out)
 
     alon, alat = wcs.wcs_pix2world(x_tab, y_tab, 0)
     # mask for pixels lying outside of projected area
@@ -509,8 +509,8 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
     # image.In FITS and Fortran standards, this is 1.  In Numpy and C
     # standards this is 0.
     #
-    # This as we are using the C convention, the center of the first pixel is -0.5, -0.5
-    y_tab, x_tab = np.indices(shape_out) - 0.5
+    # This as we are using the C convention, the center of the first pixel is 0, 0
+    y_tab, x_tab = np.indices(shape_out)
 
     alon, alat = wcs.wcs_pix2world(x_tab, y_tab, 0)
     # mask for pixels lying outside of projected area
