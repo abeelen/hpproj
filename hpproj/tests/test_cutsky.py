@@ -393,6 +393,7 @@ class TestCutSky:
         fits_file = os.path.join(outdir, opt['legend']+'.fits')
         xml_file = os.path.join(outdir, opt['legend']+'.xml')
 
+        # default -> --png
         args = "0.0 0.0"+ \
                " --mapfilenames "+ filename + \
                " --outdir "+ outdir
@@ -403,6 +404,7 @@ class TestCutSky:
         assert not os.path.exists(xml_file)
         os.remove(png_file)
 
+        # --fist only
         args = "0.0 0.0"+ \
                " --mapfilenames "+ filename + \
                " --fits " + \
@@ -414,6 +416,7 @@ class TestCutSky:
         assert not os.path.exists(xml_file)
         os.remove(fits_file)
 
+        # --fits & --votable
         args = "0.0 0.0"+ \
                " --mapfilenames "+ filename + \
                " --fits --votable" + \
@@ -421,5 +424,28 @@ class TestCutSky:
 
         exit_code = main(args.split())
         assert not os.path.exists(png_file)
+        assert os.path.exists(fits_file)
+        assert os.path.exists(xml_file)
+        os.remove(fits_file)
+
+        # Test all
+        args = "0.0 0.0"+ \
+               " --mapfilenames "+ filename + \
+               " --fits --png --votable" + \
+               " --outdir "+ outdir
+
+        exit_code = main(args.split())
+        assert os.path.exists(png_file)
+        assert os.path.exists(fits_file)
+        assert os.path.exists(xml_file)
+
+        # Test clobber works
+        args = "0.0 0.0"+ \
+               " --mapfilenames "+ filename + \
+               " --fits --png --votable" + \
+               " --outdir "+ outdir
+
+        exit_code = main(args.split())
+        assert os.path.exists(png_file)
         assert os.path.exists(fits_file)
         assert os.path.exists(xml_file)
