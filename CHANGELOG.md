@@ -1,10 +1,18 @@
 master
 ======
 
+Version 0.5.0
+=============
+
 Added
 -----
 * ExtendedInterpolation for configparser for py3, only for filename in py2
 * ``maps_selection`` option in the cut_ functions to allow sub_sample selection
+* `--xml` will now overwrite pre-existing file
+
+Fixed
+-----
+* `build_wcs*` nows put the projection center exactly at the center of the map (0.5 pixel off before)
 
 Version 0.4.0
 =============
