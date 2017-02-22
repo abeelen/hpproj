@@ -706,8 +706,8 @@ def main(argv=None):
         if 'phot' in result.keys() and output['votable']:
             # Need to cast into astropy Table before writing to votable
             phot = Table(result['phot'])
-            phot.write(os.path.join(output['outdir'], result['legend'] + '.xml'),
-                                 format='votable')
+            with open(os.path.join(output['outdir'], result['legend'] + '.xml'), 'w') as f:
+                phot.write(f,format='votable')
 
 if __name__ == '__main__':
     main(sys.argv[1:])
