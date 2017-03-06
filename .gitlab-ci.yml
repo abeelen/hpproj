@@ -8,12 +8,13 @@
 #   - apt-get install -y python-numpy
 #   - apt-get install -y python-matplotlib
 #   - apt-get install -y python-astropy python-photutils python-healpy python-wcsaxes
+#   - pip install pytest-mpl
 # # Install needed python2 packages
 #   - apt-get install -y python3-pip python3-pytest-cov python3-coverage
 #   - apt-get install -y python3-numpy
 #   - apt-get install -y python3-matplotlib
 #   - apt-get install -y python3-astropy python3-photutils python3-healpy python3-wcsaxes
-
+#   - pip3 instal pytest-mpl
 # # Alternative preparation....
 # #  - apt-get build-dep -y python-numpy
 # #  - apt-get build-dep -y matplotlib
