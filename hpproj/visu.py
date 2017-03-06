@@ -38,8 +38,8 @@ def mollview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -70,8 +70,8 @@ def carview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -101,8 +101,8 @@ def merview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -133,8 +133,8 @@ def coeview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -166,8 +166,8 @@ def bonview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -198,8 +198,8 @@ def pcoview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -230,8 +230,8 @@ def tscview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -262,8 +262,8 @@ def orthview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     proj_sys : str, ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the projection
 
-    Return
-    ------
+    Returns
+    -------
     :class:`astropy.io.fits.ImageHDU`
         2D images with header
     """
@@ -274,13 +274,8 @@ def orthview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     w1 = build_wcs(coord, 360./np.pi/(npix-1), shape, proj_sys=proj_sys, proj_type='SIN')
     orth_1 = hp_to_wcs(hp_map, dict(hp_header), w1, shape[::-1])
 
-    coord_opposite = coord.copy()
-    coord_opposite.data.lon[()] += 180*u.deg
-    coord_opposite.data.lat[()] *= -1
+    coord_opposite = SkyCoord(coord.data.lon + 180*u.deg, -1* coord.data.lat, frame=coord.frame )
 
-    lon = coord_opposite.data.lon
-    lat = coord_opposite.data.lat
-    coord_opposite.cache.clear()
     w2 = build_wcs(coord_opposite, 360./np.pi/(npix-1), shape, proj_sys=proj_sys, proj_type='SIN')
     orth_2 = hp_to_wcs(hp_map, dict(hp_header), w2, shape[::-1])
 

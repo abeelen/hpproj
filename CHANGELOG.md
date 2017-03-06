@@ -1,6 +1,14 @@
 master
 ======
 
+Version 0.6.0
+=============
+
+Added
+-----
+* Visualization function (`mollview`, `carview`, `merview`, `coeview`, `bonview`, `pcoview`, `tscview`, `orthview`)
+
+
 Version 0.5.0
 =============
 

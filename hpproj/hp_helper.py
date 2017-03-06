@@ -271,8 +271,8 @@ def _lonlat(build_wcs_func):
     build_wcs_func : fct
     a build_wcs_func function (with coords as the first argument
 
-    Return
-    ------
+    Returns
+    -------
     The same function decorated
 
     Notes
@@ -418,8 +418,8 @@ def hp_to_wcs(hp_map, hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, or
     order : int (0|1)
         order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
 
-    Return
-    ------
+    Returns
+    -------
     array_like
         the projected map in a 2D array of shape shape_out
     """
@@ -485,8 +485,8 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
     npix : int
         number of pixels in the final square map, superseed shape_out
 
-    Return
-    ------
+    Returns
+    -------
     2D array_like
         mask for the given map
     array_like
@@ -561,8 +561,8 @@ def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALAC
     hdu : bool
         return a :class:`astropy.io.fits.PrimaryHDU` instead of just a ndarray
 
-    Return
-    ------
+    Returns
+    -------
     array_like
         2D images at lon, lat position
     or :class:`astropy.io.fits.PrimaryHDU` (optionnal)
@@ -588,8 +588,8 @@ def gen_hpmap(maps):
             * (filename, path_to_localfilename, healpix header)
             * (filename, healpix vector, healpix header)
 
-    Return
-    ------
+    Returns
+    -------
     tuple
         Return a tuple (filename, healpix map, healpix header) corresponding to the inputed list
     """
@@ -610,8 +610,8 @@ def build_hpmap(filenames, low_mem=True):
     low_mem : bool
         On low memory system, do not read the maps themselves (default: only header)
 
-    Return
-    ------
+    Returns
+    -------
     tuple list
         A list of tuple which can be used by gen_hpmap    """
 
@@ -636,8 +636,8 @@ def hpmap_key(hp_map):
     hp_map: tuple
         A tuple from (build|gen)_hpmap : (filename, healpix map, healpix header)
 
-    Return
-    ------
+    Returns
+    -------
     str
         A string with the map properties
     """

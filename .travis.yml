@@ -4,8 +4,8 @@ language: python
 
 python:
   - 2.7
-  - 3.4
   - 3.5
+  - 3.6
 
 env:
     global:
@@ -20,7 +20,7 @@ matrix:
         # Try Astropy development version
         - python: 2.7
           env: ASTROPY_VERSION=development
-        - python: 3.5
+        - python: 3.6
           env: ASTROPY_VERSION=development
 
         # Try older numpy versions
