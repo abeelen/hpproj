@@ -1,13 +1,14 @@
+import matplotlib
+matplotlib.use('Agg')
+
 import pytest
 import numpy as np
 import healpy as hp
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 
-from ..visu import mollview, carview, orthview, \
+from .. import mollview, carview, orthview, \
     merview, coeview, bonview, pcoview, tscview
 
 @pytest.fixture(scope='session')
