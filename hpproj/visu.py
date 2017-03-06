@@ -9,7 +9,6 @@
 
 from __future__ import print_function, division
 
-import copy
 import numpy as np
 import healpy as hp
 
@@ -275,9 +274,7 @@ def orthview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     w1 = build_wcs(coord, 360./np.pi/(npix-1), shape, proj_sys=proj_sys, proj_type='SIN')
     orth_1 = hp_to_wcs(hp_map, dict(hp_header), w1, shape[::-1])
 
-    coord_opposite = copy.copy(coord)
-    coord_opposite.data.lon[0] += 180*u.deg
-    coord_opposite.data.lat[0] *= -1
+    coord_opposite = SkyCoord(coord.data.lon + 180*u.deg, -1* coord.data.lat, frame=coord.frame )
 
     lon = coord_opposite.data.lon
     lat = coord_opposite.data.lat
