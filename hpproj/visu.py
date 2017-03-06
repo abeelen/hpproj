@@ -276,8 +276,8 @@ def orthview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
     orth_1 = hp_to_wcs(hp_map, dict(hp_header), w1, shape[::-1])
 
     coord_opposite = copy.copy(coord)
-    coord_opposite.data.lon[()] += 180*u.deg
-    coord_opposite.data.lat[()] *= -1
+    coord_opposite.data.lon[0] += 180*u.deg
+    coord_opposite.data.lat[0] *= -1
 
     lon = coord_opposite.data.lon
     lat = coord_opposite.data.lat
