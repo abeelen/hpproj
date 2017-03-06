@@ -13,7 +13,7 @@ env:
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='healpy photutils wcsaxes'
-        - CONDA_DEPENDENCIES='matplotlib pytest-cov'
+        - CONDA_DEPENDENCIES='matplotlib pytest-cov pytest-mpl'
 
 matrix:
     include:

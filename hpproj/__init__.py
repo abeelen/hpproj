@@ -22,3 +22,4 @@ __version__ = '0.5.0'
 
 from .hp_helper import *
 from .cutsky import *
+from .visu import *
