@@ -276,9 +276,6 @@ def orthview(hp_map, hp_header, coord=None, npix=360, proj_sys='GALACTIC'):
 
     coord_opposite = SkyCoord(coord.data.lon + 180*u.deg, -1* coord.data.lat, frame=coord.frame )
 
-    lon = coord_opposite.data.lon
-    lat = coord_opposite.data.lat
-    coord_opposite.cache.clear()
     w2 = build_wcs(coord_opposite, 360./np.pi/(npix-1), shape, proj_sys=proj_sys, proj_type='SIN')
     orth_2 = hp_to_wcs(hp_map, dict(hp_header), w2, shape[::-1])
 
