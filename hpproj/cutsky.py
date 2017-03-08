@@ -596,19 +596,18 @@ def parse_config(conffile=None):
     # Also check if contours are requested
     maps_to_cut = []
     for section in config.sections():
-        if section != 'cutsky':
-            if config.has_option(section, 'filename'):
-                filename = config.get(section, 'filename')
-                if PATTERN:  # pragma: v2
-                    filename = PATTERN.sub(rep_key, filename)
-                # doCut options set to True if not present
-                if (config.has_option(section, 'doCut') and config.getboolean(section, 'doCut')) or \
-                   (not config.has_option(section, 'doCut')):
-                    opt = {'legend': section}
+        if section != 'cutsky' and config.has_option(section, 'filename'):
+            filename = config.get(section, 'filename')
+            if PATTERN:  # pragma: v2
+                filename = PATTERN.sub(rep_key, filename)
+            # doCut options set to True if not present
+            if (config.has_option(section, 'doCut') and config.getboolean(section, 'doCut')) or \
+               (not config.has_option(section, 'doCut')):
+                opt = {'legend': section}
 
-                    if config.has_option(section, 'doContour'):
-                        opt['doContour'] = config.getboolean(section, 'doContour')
-                    maps_to_cut.append((filename, opt))
+                if config.has_option(section, 'doContour'):
+                    opt['doContour'] = config.getboolean(section, 'doContour')
+                maps_to_cut.append((filename, opt))
 
     options['maps'] = maps_to_cut
 

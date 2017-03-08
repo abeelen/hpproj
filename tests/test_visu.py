@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 
-from .. import mollview, carview, orthview, \
+from hpproj import mollview, carview, orthview, \
     merview, coeview, bonview, pcoview, tscview
 
 @pytest.fixture(scope='session')

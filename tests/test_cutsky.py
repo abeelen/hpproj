@@ -11,14 +11,14 @@ logger = logging.getLogger('django')
 
 import pytest
 
-from .. import parse_args, parse_config, combine_args
-from .. import CutSky, cutsky, main, to_new_maps
-from .. import DEFAULT_NPIX, DEFAULT_COORDFRAME, DEFAULT_PIXSIZE, DEFAULT_CTYPE
+from hpproj import parse_args, parse_config, combine_args
+from hpproj import CutSky, cutsky, main, to_new_maps
+from hpproj import DEFAULT_NPIX, DEFAULT_COORDFRAME, DEFAULT_PIXSIZE, DEFAULT_CTYPE
 
 import numpy as np
 import numpy.testing as npt
 import healpy as hp
-from .. import hp_is_nest, hp_celestial
+from hpproj import hp_is_nest, hp_celestial
 
 try: # pragma: py3
     from configparser import ConfigParser

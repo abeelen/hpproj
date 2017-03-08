@@ -7,11 +7,11 @@
 
 import pytest
 
-from .. import equiv_celestial, hp_celestial, hp_is_nest, build_ctype
-from .. import build_wcs, build_wcs_cube, build_wcs_2pts
-from .. import build_wcs_lonlat
-from .. import hp_to_wcs, hp_to_wcs_ipx
-from .. import hp_project, gen_hpmap, hpmap_key
+from hpproj import equiv_celestial, hp_celestial, hp_is_nest, build_ctype
+from hpproj import build_wcs, build_wcs_cube, build_wcs_2pts
+from hpproj import build_wcs_lonlat
+from hpproj import hp_to_wcs, hp_to_wcs_ipx
+from hpproj import hp_project, gen_hpmap, hpmap_key
 
 import numpy as np
 from numpy import testing as npt
@@ -335,15 +335,10 @@ def test_hp_project():
     coord, pixsize, npix = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
     wcs = build_wcs(coord, pixsize, npix=npix)
 
-    # Test basic
+    # Test HDU
     sub_map = hp_project(hp_map, hp_header, coord, pixsize, npix)
-    assert type(sub_map) is np.ndarray
-    assert sub_map.shape == (npix, npix)
-    npt.assert_array_equal(sub_map, 1)
-
-    # Test HDUs
-    sub_map = hp_project(hp_map, hp_header, coord, pixsize, npix, hdu=True)
     assert type(sub_map) is fits.hdu.image.PrimaryHDU
+    assert sub_map.data.shape == (npix, npix)
 
 
 def test_gen_hpmap():

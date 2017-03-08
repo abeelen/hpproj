@@ -537,7 +537,7 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
     return mask, ipix
 
 
-def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALACTIC', proj_type='TAN', order=0, hdu=False):
+def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALACTIC', proj_type='TAN', order=0):
     """Project an healpix map at a single given position
 
     Parameters
@@ -563,20 +563,14 @@ def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALAC
 
     Returns
     -------
-    array_like
-        2D images at lon, lat position
-    or :class:`astropy.io.fits.PrimaryHDU` (optionnal)
+    :class:`astropy.io.fits.PrimaryHDU`
         containing the array and the corresponding header
     """
 
     wcs = build_wcs(coord, pixsize, npix=npix, proj_sys=proj_sys, proj_type=proj_type)
     proj_map = hp_to_wcs(hp_map, hp_header, wcs, npix=npix, order=order)
 
-    if hdu:
-        return fits.PrimaryHDU(proj_map, wcs.to_header(relax=0x20000))
-    else:
-        return proj_map
-
+    return fits.PrimaryHDU(proj_map, wcs.to_header(relax=0x20000))
 
 def gen_hpmap(maps):
     """Generator function for large maps and low memory system
@@ -597,7 +591,7 @@ def gen_hpmap(maps):
         if isinstance(i_map, str):
             i_map = hp.read_map(i_map, verbose=False)
             i_map = hp.ma(i_map)
-        yield (filename, i_map, i_header)
+        yield filename, i_map, i_header
 
 
 def build_hpmap(filenames, low_mem=True):
