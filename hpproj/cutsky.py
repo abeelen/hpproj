@@ -5,7 +5,7 @@
 # LGPL License - see attached LICENSE file
 # Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
 
-"""cutsky module, mainly use hp_helper functions"""
+"""cutsky module, mainly use :mod:`hpproj.hp_helper` functions"""
 
 import warnings
 import logging
@@ -173,7 +173,7 @@ class CutSky(object):
         list of dictionnaries
             the dictionnary has 2 keys :
             * 'legend' (the opts{'legend'} see __init())
-            * 'fits' an ~astropy.io.fits.ImageHDU
+            * 'fits' an :class:`~astropy.io.fits.ImageHDU`
 
         """
 
@@ -249,7 +249,7 @@ class CutSky(object):
         list of dictionnaries
             the dictionnary has 3 keys :
             * 'legend' (the opts{'legend'} see __init()),
-            * 'fits' an ~astropy.io.fits.ImageHDU,
+            * 'fits' an :class:`~astropy.io.fits.ImageHDU`,
             * 'png', a b61encoded png image of the fits
 
         """
@@ -333,7 +333,7 @@ class CutSky(object):
         list of dictionnaries
             the dictionnary has 3 keys :
             * 'legend' (the opts{'legend'} see __init()),
-            * 'fits' an ~astropy.io.fits.ImageHDU,
+            * 'fits' an :class:`~astropy.io.fits.ImageHDU`,
             * 'phot', the corresponding photometry
 
         """
@@ -435,7 +435,7 @@ def cutsky(lonlat=None, maps=None, patch=[256, 1], coordframe='galactic', ctype=
     list of dictionnaries
         the dictionnary has 4 keys :
         * 'legend' (see maps above),
-        * 'fits' an ~astropy.io.fits.ImageHDU,
+        * 'fits' an :class:`~astropy.io.fits.ImageHDU`,
         * 'png', a b61encoded png image of the fits
         * 'phot', the corresponding photometry
 
