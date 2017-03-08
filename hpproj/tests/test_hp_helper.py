@@ -131,7 +131,7 @@ class TestBuildWCS:
 
         assert wcs.wcs.naxis == 2
         # Unfortunatly astropy coordinate transformation are that precise
-        npt.assert_allclose(wcs.wcs.crval, [0, 0], atol=5e-15)
+        npt.assert_allclose(wcs.wcs.crval, [0, 0], atol=1e-14)
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1])
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
@@ -169,7 +169,7 @@ class TestBuildWCS:
 
         assert wcs.wcs.naxis == 3
         # Unfortunatly astropy coordinate transformation are that precise
-        npt.assert_allclose(wcs.wcs.crval, [0, 0, 1], atol=5e-15)
+        npt.assert_allclose(wcs.wcs.crval, [0, 0, 1], atol=1e-14)
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5, 1])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
