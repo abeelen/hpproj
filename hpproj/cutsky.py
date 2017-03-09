@@ -564,10 +564,9 @@ def parse_config(conffile=None):
         options['npix'] = config.getint('cutsky', 'npix')
     if config.has_option('cutsky', 'pixsize'):
         options['pixsize'] = config.getfloat('cutsky', 'pixsize')
-    if config.has_option('cutsky', 'coordframe'):
-        options['coordframe'] = config.get('cutsky', 'coordframe')
-    if config.has_option('cutsky', 'ctype'):
-        options['ctype'] = config.get('cutsky', 'ctype')
+    for key in ['coordframe', 'ctype', 'outdir']:
+        if config.has_option('cutsky', key):
+            options[key] = config.get('cutsky', key)
     if config.has_option('cutsky', 'verbosity'):
         level = str(config.get('cutsky', 'verbosity')).lower()
         allowed_levels = {'verbose': logging.DEBUG,
@@ -577,20 +576,14 @@ def parse_config(conffile=None):
                           'info': logging.INFO}
         if level in allowed_levels.keys():
             options['verbosity'] = allowed_levels[level]
+        elif level.isdigit():
+            options['verbosity'] = int(level)
         else:
-            try:
-                options['verbosity'] = int(level)
-            except ValueError:
-                options['verbosity'] = None
+            options['verbosity'] = None
 
-    if config.has_option('cutsky', 'fits') and config.get('cutsky', 'fits'):
-        options['fits'] = True
-    if config.has_option('cutsky', 'png') and config.get('cutsky', 'png'):
-        options['png'] = True
-    if config.has_option('cutsky', 'votable') and config.get('cutsky', 'votable'):
-        options['votable'] = True
-    if config.has_option('cutsky', 'outdir'):
-        options['outdir'] = config.get('cutsky', 'outdir')
+    for key in ['fits', 'png', 'votable']:
+        if config.has_option('cutsky', key) and config.get('cutsky', key):
+            options[key] = True
 
     # Map list, only get the one which will be projected
     # Also check if contours are requested

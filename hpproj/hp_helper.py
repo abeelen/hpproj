@@ -537,7 +537,7 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
     return mask, ipix
 
 
-def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALACTIC', proj_type='TAN', order=0):
+def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, order=0, projection=('GALACTIC', 'TAN')):
     """Project an healpix map at a single given position
 
     Parameters
@@ -552,12 +552,10 @@ def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALAC
         size of the pixel (in degree)
     npix : int
         number of pixels in the final map, the reference pixel will be at the center
-    proj_sys : str, ('GALACTIC', 'EQUATORIAL')
-        the coordinate system of the projection (from HEALPIX maps....)
-    proj_type : str ('TAN', 'SIN', 'GSL', ...)
-        the projection system to use
     order : int (0|1)
         order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
+    projection : tuple of str
+        the coordinate ('GALACTIC', 'EQUATORIAL') and projection ('TAN', 'SIN', 'GSL', ...) system
     hdu : bool
         return a :class:`astropy.io.fits.PrimaryHDU` instead of just a ndarray
 
@@ -567,6 +565,8 @@ def hp_project(hp_map, hp_header, coord, pixsize=0.01, npix=512, proj_sys='GALAC
         containing the array and the corresponding header
     """
 
+    proj_sys, proj_type = projection
+    
     wcs = build_wcs(coord, pixsize, npix=npix, proj_sys=proj_sys, proj_type=proj_type)
     proj_map = hp_to_wcs(hp_map, hp_header, wcs, npix=npix, order=order)
 
