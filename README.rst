@@ -1,7 +1,7 @@
 HealPixProjection
 =================
 
-|pypi| |license| |wheels| |format| |pyversions| |build-gitlabCI| |build-travis| |coverage| |rtd|
+|pypi| |license| |wheels| |format| |pyversions| |rtd|
 
 HealPixProjection is a project to allow easy and efficient projection of healpix maps onto planar grids. It can be used as a standalone program ``cutsky``
 
@@ -59,34 +59,53 @@ License
 
 This project is licensed under the LGPL+3.0 license.
 
+|build-gitlabCI| |build-travis| |codeclimate| |codehealth| |coverage|
+
 .. |pypi| image:: https://img.shields.io/pypi/v/hpproj.svg?maxAge=2592000
     :alt: Latest Version
     :target: https://pypi.python.org/pypi/hpproj
 
+
 .. |license| image:: https://img.shields.io/pypi/l/hpproj.svg?maxAge=2592000
     :alt: License
+
 
 .. |wheels| image:: https://img.shields.io/pypi/wheel/hpproj.svg?maxAge=2592000
    :alt: Wheels
 
+
 .. |format| image:: https://img.shields.io/pypi/format/hpproj.svg?maxAge=2592000
    :alt: Format
-      
+
+
 .. |pyversions| image:: https://img.shields.io/pypi/pyversions/hpproj.svg?maxAge=2592000
    :alt: pyversions
-      
-				
+
+
 .. |build-gitlabCI| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/build.svg
     :alt: Gitlab-CI Master Build
     :target: https://git.ias.u-psud.fr/abeelen/hpproj/builds
 
+
 .. |build-travis| image:: https://travis-ci.org/abeelen/hpproj.svg?branch=master
     :alt: Travis Master Build
     :target: https://travis-ci.org/abeelen/hpproj
-				     
+
+
+.. |codeclimate| image:: https://codeclimate.com/github/abeelen/hpproj/badges/gpa.svg
+   :alt: Code Climate
+   :target: https://codeclimate.com/github/abeelen/hpproj
+
+
+.. |codehealth| image:: https://landscape.io/github/abeelen/hpproj/master/landscape.svg?style=flat
+   :alt: Code Health
+   :target: https://landscape.io/github/abeelen/hpproj/master
+
+
 .. |coverage| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/coverage.svg
     :alt: Master Coverage
-    
+
+
 .. |rtd| image:: https://readthedocs.org/projects/hpproj/badge/?version=latest
     :alt: Read the doc
     :target: http://hpproj.readthedocs.io/

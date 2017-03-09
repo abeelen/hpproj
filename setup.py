@@ -5,7 +5,6 @@
 # LGPL License - see attached LICENSE file
 # Author: Alexandre Beelen <alexandre.beelen@ias.u-psud.fr>
 
-import os
 try:
     from setuptools import setup
 except ImportError:
@@ -48,25 +47,26 @@ def find_version(filepath):
                 version = line.strip()[-6:-1]
     return version
 
+
 opts = dict(name="hpproj",
             author='Alexandre Beelen, Marian Douspis',
             author_email='alexandre.beelen@ias.u-psud.fr',
             description='Projection of Healpix maps onto a planar grid',
             long_description=long_description,
             url='https://git.ias.u-psud.fr/abeelen/hpproj',
-            download_url='https://git.ias.u-psud.fr/abeelen/hpproj/repository/archive.tar.gz?'+find_version('hpproj/__init__.py'),
+            download_url='https://git.ias.u-psud.fr/abeelen/hpproj/repository/archive.tar.gz?' + find_version('hpproj/__init__.py'),
             license='LGPL-3.0+',
-            classifiers=[ 'Programming Language :: Python :: 2.7',
-                          'Programming Language :: Python :: 3.5',
-                          'Topic :: Scientific/Engineering :: Astronomy',
-                          'Intended Audience :: Science/Research',
-                          'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)'],
+            classifiers=['Programming Language :: Python :: 2.7',
+                         'Programming Language :: Python :: 3.5',
+                         'Topic :: Scientific/Engineering :: Astronomy',
+                         'Intended Audience :: Science/Research',
+                         'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)'],
             version=find_version('hpproj/__init__.py'),
             packages=['hpproj'],
-            package_dir={'hpproj'  : 'hpproj'},
-            entry_points = {
+            package_dir={'hpproj': 'hpproj'},
+            entry_points={
                 'console_scripts': [
-                    'cutsky = hpproj.cutsky:main'] },
+                    'cutsky = hpproj.cutsky:main']},
 
             setup_requires=['pytest-runner'],
             tests_require=['pytest', 'pytest-mpl'],
@@ -79,7 +79,7 @@ opts = dict(name="hpproj",
                 'photutils>=0.2',
                 'wcsaxes>=0.9'
             ],
-)
+            )
 
 
 if __name__ == '__main__':

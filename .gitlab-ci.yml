@@ -27,8 +27,6 @@ stages:
 
 test_master_v2:
   stage: test
-  only:
-    - master
   tags:
     - test
   script:
@@ -36,8 +34,6 @@ test_master_v2:
 
 test_master_v3:
   stage: test
-  only:
-    - master
   tags:
     - test
   script:

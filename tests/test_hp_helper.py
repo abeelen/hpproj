@@ -10,8 +10,9 @@ import pytest
 from hpproj import equiv_celestial, hp_celestial, hp_is_nest, build_ctype
 from hpproj import build_wcs, build_wcs_cube, build_wcs_2pts
 from hpproj import build_wcs_lonlat
-from hpproj import hp_to_wcs, hp_to_wcs_ipx
-from hpproj import hp_project, gen_hpmap, hpmap_key
+from hpproj import hphdu_to_wcs, hp_to_wcs_ipx
+from hpproj import hphdu_project, hp_project, gen_hpmap, hpmap_key
+from hpproj import get_lonlat
 
 import numpy as np
 from numpy import testing as npt
@@ -19,7 +20,9 @@ import healpy as hp
 from astropy.coordinates import ICRS, Galactic, SkyCoord, Angle
 from astropy.io import fits
 
+
 class TestHPCelestical:
+
     def test_equiv_celestial_exception(self):
         frames = ['ecliptic', 'Ecliptic', 'e', 'E']
         for frame in frames:
@@ -37,7 +40,7 @@ class TestHPCelestical:
                   ('q', ICRS()),
                   ('fk5', ICRS())]
 
-        for frame, result  in frames:
+        for frame, result in frames:
             assert result.is_equivalent_frame(equiv_celestial(frame))
 
     @pytest.mark.parametrize("hp_header", [{},
@@ -55,12 +58,14 @@ class TestHPCelestical:
                               ({'COORDSYS': 'Equatorial'}, ICRS()),
                               ({'COORDSYS': 'EQ'}, ICRS()),
                               ({'COORDSYS': 'celestial2000'}, ICRS()),
-                             ])
+                              ])
     def test_hp_celestial(self, hp_header, result):
         frame = hp_celestial(hp_header)
         assert frame.is_equivalent_frame(result)
 
+
 class TestHPNest:
+
     def test_hp_is_nest_exception(self):
         hp_headers = [{}, {'ORDERING': 'Unknown'}]
 
@@ -72,12 +77,14 @@ class TestHPNest:
                              [({'ORDERING': 'nested'}, True),
                               ({'ORDERING': 'NESTED'}, True),
                               ({'ORDERING': 'ring'}, False),
-                             ])
+                              ])
     def test_hp_is_nest(self, hp_header, result):
         is_nest = hp_is_nest(hp_header)
         assert is_nest == result
 
+
 class TestBuildCtype:
+
     @pytest.mark.parametrize("coordsys, proj_type",
                              [('unknown', 'TAN'),
                               ('G', 'BLA')])
@@ -89,24 +96,38 @@ class TestBuildCtype:
                              [(('Galactic', 'TAN'), ['GLON-TAN', 'GLAT-TAN']),
                               (('G', 'tan'), ['GLON-TAN', 'GLAT-TAN']),
                               (('EQUATORIAL', 'SiN'), ['RA---SIN', 'DEC--SIN']),
-                             ])
+                              ])
     def test_build_ctype(self, test, result):
         coordsys, proj_type = test
         ctype = build_ctype(coordsys, proj_type)
         assert ctype == result
 
+
+class TestGetLonLat:
+
+    @pytest.mark.parametrize("SkyCoord, proj_type, lonlat",
+                             [(SkyCoord(0, 0, unit="deg", frame="icrs"), 'equatorial', (0.0, 0.0)),
+                              (SkyCoord(0, 0, unit="deg", frame="icrs"), 'galactic', (96.33728336969006, -60.188551946914465))
+                              ])
+    def test_getlonlat(self, SkyCoord, proj_type, lonlat):
+        result = get_lonlat(SkyCoord, proj_type)
+        npt.assert_allclose(lonlat, result)
+
+
 class TestBuildWCS:
+
     def test_build_wcs_exception(self):
 
         params = [('EQ', 'BLA'), ('E', 'TAN')]
 
         for proj_sys, proj_type in params:
             with pytest.raises(ValueError):
-                build_wcs(SkyCoord(0, 0, unit='deg'), proj_sys=proj_sys, proj_type=proj_type)
+                build_wcs(SkyCoord(0, 0, unit='deg'),
+                          proj_sys=proj_sys, proj_type=proj_type)
 
     def test_build_wcs(self):
 
-        #TODO: Parametrize
+        # TODO: Parametrize
 
         coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 1, [512, 1024]
         wcs = build_wcs(coord, pixsize, shape_out)
@@ -117,11 +138,11 @@ class TestBuildWCS:
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
 
-
         wcs = build_wcs(coord, pixsize, shape_out, npix=512, proj_sys='G')
 
         assert wcs.wcs.naxis == 2
-        npt.assert_array_equal(wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg])
+        npt.assert_array_equal(
+            wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1])
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 256.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])
@@ -142,11 +163,13 @@ class TestBuildWCS:
 
         for proj_sys, proj_type in params:
             with pytest.raises(ValueError):
-                build_wcs_cube(SkyCoord(0, 0, unit='deg'), 0, proj_sys=proj_sys, proj_type=proj_type)
+                build_wcs_cube(
+                    SkyCoord(0, 0, unit='deg'), 0, proj_sys=proj_sys, proj_type=proj_type)
 
     def test_build_wcs_cube(self):
 
-        coord, index, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 1, 1, [512, 1024]
+        coord, index, pixsize, shape_out = SkyCoord(
+            0, 0, unit='deg'), 1, 1, [512, 1024]
 
         wcs = build_wcs_cube(coord, index, pixsize, shape_out)
 
@@ -154,15 +177,19 @@ class TestBuildWCS:
         npt.assert_array_equal(wcs.wcs.crval, [0, 0, 1])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5, 1])
-        npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
+        npt.assert_array_equal(
+            wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
 
-        wcs = build_wcs_cube(coord, index, pixsize, shape_out, npix=512, proj_sys='G')
+        wcs = build_wcs_cube(
+            coord, index, pixsize, shape_out, npix=512, proj_sys='G')
 
         assert wcs.wcs.naxis == 3
-        npt.assert_array_equal(wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg, 1])
+        npt.assert_array_equal(
+            wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg, 1])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 256.5, 1])
-        npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN', 'INDEX'])
+        npt.assert_array_equal(
+            wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN', 'INDEX'])
 
         coord = coord.galactic
         wcs = build_wcs_cube(coord, index, pixsize, shape_out, proj_sys='EQ')
@@ -172,11 +199,14 @@ class TestBuildWCS:
         npt.assert_allclose(wcs.wcs.crval, [0, 0, 1], atol=1e-14)
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5, 1])
-        npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
+        npt.assert_array_equal(
+            wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
 
+    # TODO: Test decorator
     def test_decorator_lonlat(self):
         lon, lat = 0, 0
-        coord, pixsize, shape_out = SkyCoord(lon, lat, unit='deg'), 1, [512, 1024]
+        coord, pixsize, shape_out = SkyCoord(
+            lon, lat, unit='deg'), 1, [512, 1024]
         wcs = build_wcs(coord, pixsize, shape_out)
 
         w_lonlat = build_wcs_lonlat(lon, lat)
@@ -195,86 +225,99 @@ def test_build_wcs_2pts_exception():
         with pytest.raises(ValueError):
             build_wcs_2pts(coords, 1, proj_sys=proj_sys, proj_type=proj_type)
 
+
 def test_build_wcs_2pts():
 
     coords = [SkyCoord(0, 0, unit='deg'),
               SkyCoord(1, 0, unit='deg')]
 
-    coords_angle = (coords[0].position_angle(coords[1])+Angle(90, unit='deg')).wrap_at('180d').rad
+    coords_angle = (coords[0].position_angle(
+        coords[1]) + Angle(90, unit='deg')).wrap_at('180d').rad
 
     rot_matrix = [[np.cos(coords_angle), np.sin(-coords_angle)],
                   [np.sin(coords_angle), np.cos(coords_angle)]]
 
-
     pixsize, shape_out = 0.1, [128, 100]
     wcs = build_wcs_2pts(coords, pixsize=pixsize, shape_out=shape_out)
 
-    relative_pos = [0.5-(coords[1].separation(coords[0]).deg/pixsize)/shape_out[1]/2,
-                    0.5+(coords[1].separation(coords[0]).deg/pixsize)/shape_out[1]/2]
+    relative_pos = [0.5 - (
+        coords[1].separation(coords[0]).deg / pixsize) / shape_out[1] / 2,
+        0.5 + (coords[1].separation(coords[0]).deg / pixsize) / shape_out[1] / 2]
 
     assert wcs.wcs.naxis == 2
     npt.assert_array_equal(wcs.wcs.crval, [0, 0])
-    npt.assert_array_equal(wcs.wcs.cdelt, [-1*pixsize, pixsize])
-    npt.assert_array_equal(wcs.wcs.crpix, [relative_pos[0]*shape_out[1], shape_out[0] / 2])
+    npt.assert_array_equal(wcs.wcs.cdelt, [-1 * pixsize, pixsize])
+    npt.assert_array_equal(
+        wcs.wcs.crpix, [relative_pos[0] * shape_out[1], shape_out[0] / 2])
     npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
     npt.assert_array_equal(wcs.wcs.pc, rot_matrix)
 
-    shape_out, relative_pos = [128, 100], (2./5, 3./5)
-    wcs = build_wcs_2pts(coords, shape_out=shape_out, relative_pos=relative_pos)
+    shape_out, relative_pos = [128, 100], (2. / 5, 3. / 5)
+    wcs = build_wcs_2pts(
+        coords, shape_out=shape_out, relative_pos=relative_pos)
 
-    pixsize = coords[0].separation(coords[1]).deg / (np.sum(np.array(relative_pos)*np.array([-1, 1])) * shape_out[1])
+    pixsize = coords[0].separation(coords[1]).deg / (
+        np.sum(np.array(relative_pos) * np.array([-1, 1])) * shape_out[1])
 
     assert wcs.wcs.naxis == 2
     npt.assert_array_equal(wcs.wcs.crval, [0, 0])
-    npt.assert_allclose(wcs.wcs.cdelt, [-1*pixsize, pixsize])
-    npt.assert_array_equal(wcs.wcs.crpix, [shape_out[1]*relative_pos[0], shape_out[0]/2])
+    npt.assert_allclose(wcs.wcs.cdelt, [-1 * pixsize, pixsize])
+    npt.assert_array_equal(
+        wcs.wcs.crpix, [shape_out[1] * relative_pos[0], shape_out[0] / 2])
     npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
 
-    wcs = build_wcs_2pts(coords, npix=shape_out[0], relative_pos=relative_pos, proj_sys='GALACTIC')
-    npt.assert_array_equal(wcs.wcs.crpix, [shape_out[0]*relative_pos[0], shape_out[0]/2])
+    wcs = build_wcs_2pts(coords, npix=shape_out[
+                         0], relative_pos=relative_pos, proj_sys='GALACTIC')
+    npt.assert_array_equal(
+        wcs.wcs.crpix, [shape_out[0] * relative_pos[0], shape_out[0] / 2])
     npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])
 
 
-def test_hp_to_wcs_exception():
+def test_hphdu_to_wcs_exception():
 
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside))
     hp_header = {'NSIDE': nside,
                  'ORDERING': 'RING',
                  'COORDSYS': 'C'}
+    hp_hdu = fits.ImageHDU(hp_map, fits.Header(hp_header))
 
     coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 1, [512, 512]
     wcs = build_wcs(coord, pixsize, shape_out)
 
     # Test order > 1
     with pytest.raises(ValueError):
-        sub_map = hp_to_wcs(hp_map, hp_header, wcs, shape_out=shape_out, order=2)
+        sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=2)
 
-def test_hp_to_wcs():
-    # hp_to_wcs(hp_map, hp_header, wcs, shape_out=DEFAULT_shape_out, npix=None, order=0):
+
+def test_hphdu_to_wcs():
+    # hphdu_to_wcs(hp_map, hp_header, wcs, shape_out=DEFAULT_shape_out,
+    # npix=None, order=0):
 
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside))
     hp_header = {'NSIDE': nside,
                  'ORDERING': 'RING',
                  'COORDSYS': 'C'}
+    hp_hdu = fits.ImageHDU(hp_map, fits.Header(hp_header))
 
-    coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), [512, 512]
+    coord, pixsize, shape_out = SkyCoord(
+        0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), [512, 512]
     wcs = build_wcs(coord, pixsize, shape_out)
 
     # Test order = 0
-    sub_map = hp_to_wcs(hp_map, hp_header, wcs, shape_out=shape_out, order=0)
+    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=0)
     assert sub_map.shape == tuple(shape_out)
     npt.assert_array_equal(sub_map, 1)
 
     # Test npix option
-    sub_map = hp_to_wcs(hp_map, hp_header, wcs, npix=512, order=0)
+    sub_map = hphdu_to_wcs(hp_hdu, wcs, npix=512, order=0)
     assert sub_map.shape == tuple(shape_out)
     npt.assert_array_equal(sub_map, 1)
 
     # Test order = 1
-    sub_map = hp_to_wcs(hp_map, hp_header, wcs, shape_out=shape_out, order=1)
-    npt.assert_allclose(sub_map, 1, rtol=1e-15) # hp.get_interp_val precision
+    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=1)
+    npt.assert_allclose(sub_map, 1, rtol=1e-15)  # hp.get_interp_val precision
 
     # Test specific pixel Better use an odd number for this, because
     # build_wcs put the reference at the center of the image, which in
@@ -284,22 +327,22 @@ def test_hp_to_wcs():
     wcs = build_wcs(coord, pixsize, shape_out)
 
     lon, lat = coord.ra.deg, coord.dec.deg
-    phi, theta = np.radians(lon), np.radians(90-lat)
+    phi, theta = np.radians(lon), np.radians(90 - lat)
     ipix = hp.ang2pix(nside, theta, phi, nest=hp_is_nest(hp_header))
     hp_map[ipix] = 0
-    sub_map = hp_to_wcs(hp_map, hp_header, wcs, shape_out=shape_out, order=0)
+    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=0)
     i_x, i_y = wcs.all_world2pix(lon, lat, 0)
-    assert sub_map[int(np.floor(i_y+0.5)), int(np.floor(i_x+0.5))] == 0
+    assert sub_map[int(np.floor(i_y + 0.5)), int(np.floor(i_x + 0.5))] == 0
 
     # Test different frame
     wcs = build_wcs(coord, pixsize, shape_out, proj_sys="G")
-    sub_map = hp_to_wcs(hp_map, hp_header, wcs, shape_out=shape_out)
+    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out)
     lon, lat = coord.galactic.l.deg, coord.galactic.b.deg
     i_x, i_y = wcs.all_world2pix(lon, lat, 0)
-    assert sub_map[int(np.floor(i_y+0.5)), int(np.floor(i_x+0.5))] == 0
+    assert sub_map[int(np.floor(i_y + 0.5)), int(np.floor(i_x + 0.5))] == 0
 
 
-def test_hp_to_wcs_ipx():
+def test_hphdu_to_wcs_ipx():
 
     nside = 2**6
     hp_header = {'NSIDE': nside,
@@ -312,7 +355,7 @@ def test_hp_to_wcs_ipx():
     # Basic test
     sub_mask, sub_ipx = hp_to_wcs_ipx(hp_header, wcs, shape_out=shape_out)
     lon, lat = coord.ra.deg, coord.dec.deg
-    phi, theta = np.radians(lon), np.radians(90-lat)
+    phi, theta = np.radians(lon), np.radians(90 - lat)
     ipix = hp.ang2pix(nside, theta, phi, nest=hp_is_nest(hp_header))
 
     npt.assert_array_equal(sub_mask, True)
@@ -320,20 +363,38 @@ def test_hp_to_wcs_ipx():
 
     # Test different frame
     wcs = build_wcs(coord, pixsize, npix=1, proj_sys="G")
-    sub_mask, sub_ipx = hp_to_wcs_ipx(hp_header, wcs, npix=1, shape_out=shape_out)
+    sub_mask, sub_ipx = hp_to_wcs_ipx(
+        hp_header, wcs, npix=1, shape_out=shape_out)
     npt.assert_array_equal(sub_mask, True)
     npt.assert_array_equal(sub_ipx, ipix)
 
 
-def test_hp_project():
+def test_hphdu_project():
+    nside = 2**6
+    hp_map = np.ones(hp.nside2npix(nside))
+    hp_header = {'NSIDE': nside,
+                 'ORDERING': 'RING',
+                 'COORDSYS': 'C'}
+    hp_hdu = fits.ImageHDU(hp_map, fits.Header(hp_header))
+
+    coord, pixsize, npix = SkyCoord(
+        0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
+
+    # Test HDU
+    sub_map = hphdu_project(hp_hdu, coord, pixsize, npix)
+    assert type(sub_map) is fits.hdu.image.PrimaryHDU
+    assert sub_map.data.shape == (npix, npix)
+
+
+def test_hpmap_decorator():
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside))
     hp_header = {'NSIDE': nside,
                  'ORDERING': 'RING',
                  'COORDSYS': 'C'}
 
-    coord, pixsize, npix = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
-    wcs = build_wcs(coord, pixsize, npix=npix)
+    coord, pixsize, npix = SkyCoord(
+        0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
 
     # Test HDU
     sub_map = hp_project(hp_map, hp_header, coord, pixsize, npix)
@@ -349,11 +410,12 @@ def test_gen_hpmap():
                  'ORDERING': 'RING',
                  'COORDSYS': 'C'}
 
-    maps = [('map'+str(i), hp_map*i, hp_header) for i in range(3)]
+    maps = [('map' + str(i), hp_map * i, hp_header) for i in range(3)]
 
-    for i, (name, hp_map, hp_header) in enumerate(gen_hpmap(maps)):
-        assert name == 'map'+str(i)
-        npt.assert_array_equal(hp_map, i)
+    for i, (name, hp_hdu) in enumerate(gen_hpmap(maps)):
+        assert name == 'map' + str(i)
+        npt.assert_array_equal(hp_hdu.data, i)
+
 
 def test_hpmap_key():
 
@@ -382,17 +444,18 @@ def test_hpmap_key():
 #                     'ORDERING': 'RING',
 #                     'COORDSYS': 'G'} ]
 
-#     hp_keys = ["%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],  hp_celestial(hp_header).name) for hp_header in hp_headers]
+# hp_keys = ["%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],
+# hp_celestial(hp_header).name) for hp_header in hp_headers]
 
 #     maps = [('dummy_'+str(i),'dummy_'+str(i),hp_header) for i,hp_header in enumerate(hp_headers) ]
 #     maps.append(('dummy_4', 'dummy_4', hp_headers[0]))
 
 #     grouped_maps = group_hpmap(maps)
 
-#     # First and last should be grouped
+# First and last should be grouped
 #     assert grouped_maps[hp_keys[0]] == [maps[0], maps[-1]]
 
-#     # Test the singletons (all but first and last)
+# Test the singletons (all but first and last)
 #     for i,key in enumerate(hp_keys[1:]):
 #         assert len(grouped_maps[key]) == 1
 #         assert grouped_maps[key][0] == maps[i+1]

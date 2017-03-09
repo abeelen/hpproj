@@ -1,0 +1,8 @@
+.cache/
+.coverage
+.eggs/
+build/
+dist/
+*.egg-info/
+reports/
+
