@@ -1,13 +1,35 @@
 master
 ======
 
+Added
+-----
+* Unit tests on the plotting functions thanks to `pytest-mpl`
+* SonarQube integration with travis
+
+Fixed
+-----
+* Moved tests scripts into package root
+* Refactoring of some function thanks to SonarQube
+* :func:`~hpproj.hp_helpers.hp_project` now always returns an :class:`astropy.io.fits.PrimaryHDU`
+
+Version 0.6.1
+=============
+
+Added
+-----
+* Documentation for visualization function with examples
+
+Fixed
+-----
+* Unit tests (travis -py3.4 +py3.6)
+* Documentation links
+
 Version 0.6.0
 =============
 
 Added
 -----
 * Visualization function (`mollview`, `carview`, `merview`, `coeview`, `bonview`, `pcoview`, `tscview`, `orthview`)
-
 
 Version 0.5.0
 =============
