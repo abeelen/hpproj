@@ -21,12 +21,11 @@ from astropy import units as u
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
 
 
-__all__ = ['build_wcs', 'build_wcs_lonlat',
-           'build_wcs_cube', 'build_wcs_cube_lonlat',
+__all__ = ['build_wcs', 'build_wcs_cube',
            'build_wcs_2pts', 'build_ctype',
            'hp_is_nest', 'hp_celestial',
-           'hphdu_to_wcs', 'hp_to_wcs', 'hp_to_wcs_ipx',
-           'hphdu_project', 'hp_project',
+           'hp_to_wcs', 'hp_to_wcs_ipx',
+           'hp_project',
            'gen_hpmap', 'build_hpmap', 'hpmap_key',
            'equiv_celestial', 'get_lonlat']
 
@@ -41,6 +40,148 @@ VALID_PROJ = ['AZP', 'SZP', 'TAN', 'STG', 'SIN',
 
 VALID_GALACTIC = ['galactic', 'g']
 VALID_EQUATORIAL = ['celestial2000', 'equatorial', 'eq', 'c', 'q', 'fk4', 'fk5', 'icrs']
+
+
+# Decorator and decorated functions
+def update_docstring(fct, skip=0, head_docstring=None, foot_docstring=None):
+    """Update the docstring of a decorated function by insterting a docstring at the beginning
+
+    Parameters
+    ----------
+    fct : fct
+        the original function from which we extract the documentation
+    skip : int
+        number of line to skip in the original documentation
+    head_docstring : str
+        additionnal documentation to be insterted at the top
+    foot_docstring : str
+        additionnal documentation to be inserted at the end
+
+    Returns
+    -------
+    fct
+        the decorator function with the updated docstring
+    """
+
+    # Extract first line of the original function
+    docstring = str(fct.__doc__).split('\n')[0]
+
+    if head_docstring:
+        docstring += head_docstring
+
+    docstring += '\n'.join(str(fct.__doc__).split('\n')[skip:])
+
+    if foot_docstring:
+        docstring += foot_docstring
+
+    return docstring
+
+
+def _hpmap(hphdu_func):
+    """Will decorate the function taking hp_hdu function to be able to use it with hp_map, hp_header instead of an :class:`astropy.io.fits.ImageHDU` object
+
+    Parameters
+    ----------
+    a function using hp_hpu :class:`astropy.io.fits.ImageHDU` as the first argument
+
+    Returns
+    -------
+    The same function decorated
+
+    Notes
+    -----
+    To use this decorator
+    hp_to_wcs = _hpmap(hphdu_to_wcs)
+    or use @_hpmap on the function declaration
+    """
+
+    def decorator(*args, **kargs):
+        """Transform a function call from (hp_map, hp_header,*) to (ImageHDU, *)"""
+        if isinstance(args[0], np.ndarray) and \
+           (isinstance(args[1], dict) or isinstance(args[1], fits.Header)):
+            hp_hdu = fits.ImageHDU(args[0], fits.Header(args[1]))
+            # Ugly fix to modigy the args
+            args = list(args)
+            args.insert(2, hp_hdu)
+            args = tuple(args[2:])
+        return hphdu_func(*args, **kargs)
+
+    decorator._hphdu = hphdu_func
+    decorator.__doc__ = update_docstring(hphdu_func, skip=6, head_docstring="""
+    Parameters
+    ----------
+    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+        a pseudo ImageHDU with the healpix map and the associated header
+
+        or
+
+        hp_map : array_like
+            healpix map with corresponding
+        hp_header : :class:`astropy.fits.header.Header`
+    """, foot_docstring="""
+    Notes
+    -----
+    You can access a function using only catalogs with the ._coord() method
+    """)
+    return decorator
+
+
+def _lonlat(build_wcs_func):
+    """Will decorate the build_wcs function to be able to use it with lon/lat, proj_sys instead of an :class:`astropy.coordinate.SkyCoord` object
+
+    Parameters
+    ----------
+    build_wcs_func : fct
+    a build_wcs_func function (with coords as the first argument
+
+    Returns
+    -------
+    The same function decorated
+
+    Notes
+    -----
+    To use this decorator
+    build_wcs_lonlat = _lonlat(build_wcs)
+    or use @_lonlat on the function declaration
+
+    """
+
+    def decorator(*args, **kwargs):
+        """Transform a function call from (lon, lat, src_frame,*) to (coord, *)"""
+        if len(args) > 1:
+            lon, lat = args[0:2]
+            src_frame = kwargs.get('src_frame', 'EQUATORIAL').lower()
+            # Checks proper arguments values
+            if (isinstance(lon, float) or isinstance(lon, int)) and \
+               (isinstance(lat, float) or isinstance(lat, int)) and \
+               (src_frame in VALID_GALACTIC or src_frame in VALID_EQUATORIAL):
+                frame = equiv_celestial(src_frame)
+                coord = SkyCoord(lon, lat, frame=frame, unit="deg")
+                # Ugly fix to modigy the args
+                args = list(args)
+                args.insert(2, coord)
+                args = tuple(args[2:])
+        return build_wcs_func(*args, **kwargs)
+
+    decorator._coord = build_wcs_func
+    decorator.__doc__ = update_docstring(build_wcs_func, skip=6, head_docstring="""
+    Parameters
+    ----------
+    coord : :class:`astropy.coordinate.SkyCoord`
+        the sky coordinate of the center of the projection
+
+        or
+
+        lon,lat : floats
+            the sky coordinates of the center of projection and
+        src_frame :  str, ('GALACTIC', 'EQUATORIAL')
+            the coordinate system of the longitude and latitude
+    """, foot_docstring="""
+    Notes
+    -----
+    You can access a function using only catalogs with the ._coord() method
+    """)
+    return decorator
 
 
 def equiv_celestial(frame):
@@ -181,6 +322,7 @@ def get_lonlat(coord, proj_sys):
     return lon, lat
 
 
+@_lonlat
 def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
 
@@ -226,6 +368,7 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_
     return wcs
 
 
+@_lonlat
 def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 3D cube, where the 3rd dimension is an index
 
@@ -412,7 +555,8 @@ def rotate_frame(alon, alat, hp_header, wcs):
     return alon, alat
 
 
-def hphdu_to_wcs(hp_hdu, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, order=0):
+@_hpmap
+def hp_to_wcs(hp_hdu, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, order=0):
     """Project an Healpix map on a wcs header, using nearest neighbors.
 
     Parameters
@@ -532,7 +676,8 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
     return mask, ipix
 
 
-def hphdu_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('GALACTIC', 'TAN')):
+@_hpmap
+def hp_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('GALACTIC', 'TAN')):
     """Project an healpix map at a single given position
 
     Parameters
@@ -561,7 +706,7 @@ def hphdu_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('G
     proj_sys, proj_type = projection
 
     wcs = build_wcs(coord, pixsize, npix=npix, proj_sys=proj_sys, proj_type=proj_type)
-    proj_map = hphdu_to_wcs(hp_hdu, wcs, npix=npix, order=order)
+    proj_map = hp_to_wcs(hp_hdu, wcs, npix=npix, order=order)
 
     return fits.PrimaryHDU(proj_map, wcs.to_header(relax=0x20000))
 
@@ -632,129 +777,3 @@ def hpmap_key(hp_map):
     i_header = hp_map[2]
 
     return "%s_%s_%s" % (i_header['NSIDE'], i_header['ORDERING'], hp_celestial(i_header).name)
-
-
-# Decorator and decorated functions
-def update_docstring(fct, skip=0, head_docstring=None, foot_docstring=None):
-    """Update the docstring of a decorated function by insterting a docstring at the beginning
-
-    Parameters
-    ----------
-    fct : fct
-        the original function from which we extract the documentation
-    skip : int
-        number of line to skip in the original documentation
-    head_docstring : str
-        additionnal documentation to be insterted at the top
-    foot_docstring : str
-        additionnal documentation to be inserted at the end
-
-    Returns
-    -------
-    fct
-        the decorator function with the updated docstring
-    """
-
-    # Extract first line of the original function
-    docstring = str(fct.__doc__).split('\n')[0]
-
-    if head_docstring:
-        docstring += head_docstring
-
-    docstring += '\n'.join(str(fct.__doc__).split('\n')[skip:])
-
-    if foot_docstring:
-        docstring += foot_docstring
-
-    return docstring
-
-
-def _lonlat(build_wcs_func):
-    """Will decorate the build_wcs function to be able to use it with lon/lat, proj_sys instead of an :class:`astropy.coordinate.SkyCoord` object
-
-    Parameters
-    ----------
-    build_wcs_func : fct
-    a build_wcs_func function (with coords as the first argument
-
-    Returns
-    -------
-    The same function decorated
-
-    Notes
-    -----
-    To use this decorator
-    build_wcs_lonlat = _lonlat(build_wcs)
-    or use @_lonlat on the function declaration
-
-    """
-
-    def decorator(lon, lat, src_frame='EQUATORIAL', **kargs):
-        """Transform a function call from (lon, lat, src_frame,*) to (coord, *)"""
-        frame = equiv_celestial(src_frame)
-        coord = SkyCoord(lon, lat, frame=frame, unit="deg")
-        return build_wcs_func(coord, **kargs)
-
-    decorator._coord = build_wcs_func
-    decorator.__doc__ = update_docstring(build_wcs_func, skip=6, head_docstring="""
-    Parameters
-    ----------
-    lon,lat : floats
-        the sky coordinates of the center of projection
-    src_frame :  str, ('GALACTIC', 'EQUATORIAL')
-        the coordinate system of the longitude and latitude
-    """, foot_docstring="""
-    Notes
-    -----
-    You can access a function using only catalogs with the ._coord() method
-    """)
-    return decorator
-
-
-build_wcs_lonlat = _lonlat(build_wcs)
-
-build_wcs_cube_lonlat = _lonlat(build_wcs_cube)
-
-
-def _hpmap(hphdu_func):
-    """Will decorate the function taking hp_hdu function to be able to use it with hp_map, hp_header instead of an :class:`astropy.io.fits.ImageHDU` object
-
-    Parameters
-    ----------
-    a function using hp_hpu :class:`astropy.io.fits.ImageHDU` as the first argument
-
-    Returns
-    -------
-    The same function decorated
-
-    Notes
-    -----
-    To use this decorator
-    hp_to_wcs = _hpmap(hphdu_to_wcs)
-    or use @_hpmap on the function declaration
-    """
-
-    def decorator(hp_map, hp_header, *args, **kargs):
-        """Transform a function call from (hp_map, hp_header,*) to (ImageHDU, *)"""
-        hp_hdu = fits.ImageHDU(hp_map, fits.Header(hp_header))
-        return hphdu_func(hp_hdu, *args, **kargs)
-
-    decorator._hphdu = hphdu_func
-    decorator.__doc__ = update_docstring(hphdu_func, skip=6, head_docstring="""
-    Parameters
-    ----------
-    hp_map : array_like
-        healpix map with
-    hp_header : :class:`astropy.fits.header.Header`
-    """, foot_docstring="""
-    Notes
-    -----
-    You can access a function using only catalogs with the ._coord() method
-    """)
-    return decorator
-
-
-hp_to_wcs = _hpmap(hphdu_to_wcs)
-
-
-hp_project = _hpmap(hphdu_project)

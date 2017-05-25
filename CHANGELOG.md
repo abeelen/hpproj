@@ -5,7 +5,10 @@ Added
 -----
 * Unit tests on the plotting functions thanks to `pytest-mpl`
 * SonarQube integration with travis
-
+* decorator changed :
+    - hphdu_to_* functions merged into hp_to, function accept either a :class:`astropy.io.fits.ImageHDU` or array_like and :class:`astropy.fits.header.Header`
+    - *_lonlat	 functions merged into build_wcs*, function accept either a :class:`astropy.coordinate.SkyCoord` or 2 floats and a keyword : `lon, lat, src_frame='EQUATORIAL'`
+	
 Fixed
 -----
 * Moved tests scripts into package root

@@ -8,7 +8,9 @@ from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 
-from hpproj import mollview, carview, orthview, \
+import numpy.testing as npt
+
+from hpproj import view, mollview, carview, orthview, \
     merview, coeview, bonview, pcoview, tscview
 
 import matplotlib
@@ -28,6 +30,16 @@ def generate_hpmap():
 
     return (hp_hdu)
 
+def test_decorator(generate_hpmap):
+    hp_hdu = generate_hpmap
+    hp_map = hp_hdu.data
+    hp_header = hp_hdu.header
+
+    _hdu = view(hp_hdu)
+    _map = view(hp_map, hp_header)
+
+    assert(_hdu.header == _map.header)
+    npt.assert_array_equal(_hdu.data, _map.data)
 
 @pytest.mark.mpl_image_compare
 def test_orthview(generate_hpmap):

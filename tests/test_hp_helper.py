@@ -9,9 +9,8 @@ import pytest
 
 from hpproj import equiv_celestial, hp_celestial, hp_is_nest, build_ctype
 from hpproj import build_wcs, build_wcs_cube, build_wcs_2pts
-from hpproj import build_wcs_lonlat
-from hpproj import hphdu_to_wcs, hp_to_wcs_ipx
-from hpproj import hphdu_project, hp_project, gen_hpmap, hpmap_key
+from hpproj import hp_to_wcs, hp_to_wcs_ipx
+from hpproj import hp_project, gen_hpmap, hpmap_key
 from hpproj import get_lonlat
 
 import numpy as np
@@ -209,7 +208,7 @@ class TestBuildWCS:
             lon, lat, unit='deg'), 1, [512, 1024]
         wcs = build_wcs(coord, pixsize, shape_out)
 
-        w_lonlat = build_wcs_lonlat(lon, lat)
+        w_lonlat = build_wcs(lon, lat)
         # Hum... something is wrong.... dont know why...
         pass
 
@@ -273,7 +272,7 @@ def test_build_wcs_2pts():
     npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])
 
 
-def test_hphdu_to_wcs_exception():
+def test_hp_to_wcs_exception():
 
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside))
@@ -287,11 +286,11 @@ def test_hphdu_to_wcs_exception():
 
     # Test order > 1
     with pytest.raises(ValueError):
-        sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=2)
+        sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=2)
 
 
-def test_hphdu_to_wcs():
-    # hphdu_to_wcs(hp_map, hp_header, wcs, shape_out=DEFAULT_shape_out,
+def test_hp_to_wcs():
+    # hp_to_wcs(hp_map, hp_header, wcs, shape_out=DEFAULT_shape_out,
     # npix=None, order=0):
 
     nside = 2**6
@@ -306,17 +305,17 @@ def test_hphdu_to_wcs():
     wcs = build_wcs(coord, pixsize, shape_out)
 
     # Test order = 0
-    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=0)
+    sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=0)
     assert sub_map.shape == tuple(shape_out)
     npt.assert_array_equal(sub_map, 1)
 
     # Test npix option
-    sub_map = hphdu_to_wcs(hp_hdu, wcs, npix=512, order=0)
+    sub_map = hp_to_wcs(hp_hdu, wcs, npix=512, order=0)
     assert sub_map.shape == tuple(shape_out)
     npt.assert_array_equal(sub_map, 1)
 
     # Test order = 1
-    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=1)
+    sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=1)
     npt.assert_allclose(sub_map, 1, rtol=1e-15)  # hp.get_interp_val precision
 
     # Test specific pixel Better use an odd number for this, because
@@ -330,19 +329,19 @@ def test_hphdu_to_wcs():
     phi, theta = np.radians(lon), np.radians(90 - lat)
     ipix = hp.ang2pix(nside, theta, phi, nest=hp_is_nest(hp_header))
     hp_map[ipix] = 0
-    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=0)
+    sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=0)
     i_x, i_y = wcs.all_world2pix(lon, lat, 0)
     assert sub_map[int(np.floor(i_y + 0.5)), int(np.floor(i_x + 0.5))] == 0
 
     # Test different frame
     wcs = build_wcs(coord, pixsize, shape_out, proj_sys="G")
-    sub_map = hphdu_to_wcs(hp_hdu, wcs, shape_out=shape_out)
+    sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out)
     lon, lat = coord.galactic.l.deg, coord.galactic.b.deg
     i_x, i_y = wcs.all_world2pix(lon, lat, 0)
     assert sub_map[int(np.floor(i_y + 0.5)), int(np.floor(i_x + 0.5))] == 0
 
 
-def test_hphdu_to_wcs_ipx():
+def test_hp_to_wcs_ipx():
 
     nside = 2**6
     hp_header = {'NSIDE': nside,
@@ -369,7 +368,7 @@ def test_hphdu_to_wcs_ipx():
     npt.assert_array_equal(sub_ipx, ipix)
 
 
-def test_hphdu_project():
+def test_hp_project():
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside))
     hp_header = {'NSIDE': nside,
@@ -381,7 +380,7 @@ def test_hphdu_project():
         0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
 
     # Test HDU
-    sub_map = hphdu_project(hp_hdu, coord, pixsize, npix)
+    sub_map = hp_project(hp_hdu, coord, pixsize, npix)
     assert type(sub_map) is fits.hdu.image.PrimaryHDU
     assert sub_map.data.shape == (npix, npix)
 

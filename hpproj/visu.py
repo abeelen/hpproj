@@ -16,12 +16,13 @@ from astropy import units as u
 from astropy.io.fits import ImageHDU
 from astropy.coordinates import SkyCoord
 
-from .hp_helper import build_wcs, hphdu_to_wcs, equiv_celestial
+from .hp_helper import build_wcs, hp_to_wcs, equiv_celestial, _hpmap
 
-__all__ = ['mollview', 'orthview', 'carview', 'merview',
+__all__ = ['view', 'mollview', 'orthview', 'carview', 'merview',
            'coeview', 'bonview', 'pcoview', 'tscview']
 
 
+@_hpmap
 def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', aspect=1., pv=None):
     """projection of the full sky
 
@@ -55,7 +56,7 @@ def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', asp
     _wcs = build_wcs(coord, 360. / npix, shape, proj_sys=proj_sys, proj_type=proj_type)
     if pv:
         _wcs.wcs.set_pv(pv)
-    _data = hphdu_to_wcs(hp_hdu, _wcs, shape[::-1])
+    _data = hp_to_wcs(hp_hdu, _wcs, shape[::-1])
 
     return ImageHDU(_data, _wcs.to_header())
 
@@ -121,8 +122,8 @@ def orthview(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC'):
 
     wcs1, wcs2 = [build_wcs(coord, 360. / np.pi / (npix - 1), shape, proj_sys=proj_sys, proj_type='SIN') for coord in [coord, coord_opposite]]
 
-    orth_1 = hphdu_to_wcs(hp_hdu, wcs1, shape[::-1])
-    orth_2 = hphdu_to_wcs(hp_hdu, wcs2, shape[::-1])
+    orth_1 = hp_to_wcs(hp_hdu, wcs1, shape[::-1])
+    orth_2 = hp_to_wcs(hp_hdu, wcs2, shape[::-1])
 
     return (ImageHDU(orth_1, wcs1.to_header()),
             ImageHDU(orth_2, wcs2.to_header()))
