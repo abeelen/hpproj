@@ -1,6 +1,16 @@
 master
 ======
 
+Version 0.7.1
+=============
+
+Fixed
+-----
+* doc build process 
+
+Version 0.7.0
+=============
+
 Added
 -----
 * Unit tests on the plotting functions thanks to `pytest-mpl`
