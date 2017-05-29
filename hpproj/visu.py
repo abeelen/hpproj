@@ -53,10 +53,10 @@ def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', asp
         coord = SkyCoord(0, 0, unit='deg', frame=equiv_celestial(proj_sys))
 
     shape = (np.asarray([1., aspect]) * npix).astype(np.int)
-    _wcs = build_wcs(coord, 360. / npix, shape, proj_sys=proj_sys, proj_type=proj_type)
+    _wcs = build_wcs._coord(coord, 360. / npix, shape, proj_sys=proj_sys, proj_type=proj_type)
     if pv:
         _wcs.wcs.set_pv(pv)
-    _data = hp_to_wcs(hp_hdu, _wcs, shape[::-1])
+    _data = hp_to_wcs._hphdu(hp_hdu, _wcs, shape[::-1])
 
     return ImageHDU(_data, _wcs.to_header())
 
@@ -120,10 +120,10 @@ def orthview(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC'):
     coord_opposite = SkyCoord(
         coord.data.lon + 180 * u.deg, -1 * coord.data.lat, frame=coord.frame)
 
-    wcs1, wcs2 = [build_wcs(coord, 360. / np.pi / (npix - 1), shape, proj_sys=proj_sys, proj_type='SIN') for coord in [coord, coord_opposite]]
+    wcs1, wcs2 = [build_wcs._coord(coord, 360. / np.pi / (npix - 1), shape, proj_sys=proj_sys, proj_type='SIN') for coord in [coord, coord_opposite]]
 
-    orth_1 = hp_to_wcs(hp_hdu, wcs1, shape[::-1])
-    orth_2 = hp_to_wcs(hp_hdu, wcs2, shape[::-1])
+    orth_1 = hp_to_wcs._hphdu(hp_hdu, wcs1, shape[::-1])
+    orth_2 = hp_to_wcs._hphdu(hp_hdu, wcs2, shape[::-1])
 
     return (ImageHDU(orth_1, wcs1.to_header()),
             ImageHDU(orth_2, wcs2.to_header()))
