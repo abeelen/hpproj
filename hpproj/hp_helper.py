@@ -108,6 +108,7 @@ def _hpmap(hphdu_func):
 
     decorator._hphdu = hphdu_func
     decorator.__doc__ = update_docstring(hphdu_func, skip=6, head_docstring="""
+
     Parameters
     ----------
     hp_hdu : `:class:astropy.io.fits.ImageHDU`

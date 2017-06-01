@@ -63,36 +63,44 @@ def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', asp
 
 mollview = partial(view, proj_type='TAN', aspect=0.5)
 update_wrapper(mollview, view)
+mollview.__name__ = "mollview"
 mollview.__doc__ = "Mollweide " + mollview.__doc__
 
 carview = partial(view, proj_type='CAR', aspect=0.5)
 update_wrapper(carview, view)
+carview.__name__ = "carview"
 carview.__doc__ = "Plate carrée " + carview.__doc__
 
 merview = partial(view, proj_type='MER', aspect=0.5)
 update_wrapper(merview, view)
+merview.__name__ = "merview"
 merview.__doc__ = "Mercator " + merview.__doc__
 
 coeview = partial(view, proj_type='COE', pv=[(1, 1, -20), (2, 1, -70)])
 update_wrapper(coeview, view)
+coeview.__name__ = "coeview"
 coeview.__doc__ = "Conic Equal Area " + coeview.__doc__
 
 # TODO: Check ratio
 bonview = partial(view, proj_type='BON', aspect=4. / 5, pv=[(1, 1, 0), (2, 1, 45)])
 update_wrapper(bonview, view)
+bonview.__name__ = "bonview"
 bonview.__doc__ = "Bonne's Equal Area " + bonview.__doc__
 
 # TODO: Check ratio
 pcoview = partial(view, proj_type='PCO', aspect=7. / 9)
 update_wrapper(pcoview, view)
+pcoview.__name__ = "pcoview"
 pcoview.__doc__ = "Hassler's polyconic " + pcoview.__doc__
 
 # TODO: Check ratio
 tscview = partial(view, proj_type='TSC', aspect=3. / 4)
 update_wrapper(tscview, view)
+tscview.__name__ = "tscview"
 tscview.__doc__ = "Tangential spherical cube " + tscview.__doc__
 
 
+@_hpmap
 def orthview(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC'):
     """Slant orthographic projection of the full sky
 
