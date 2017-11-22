@@ -150,7 +150,7 @@ def _lonlat(build_wcs_func):
         """Transform a function call from (lon, lat, src_frame,*) to (coord, *)"""
         if len(args) > 1:
             lon, lat = args[0:2]
-            src_frame = kwargs.get('src_frame', 'EQUATORIAL').lower()
+            src_frame = kwargs.pop('src_frame', 'EQUATORIAL').lower()
             # Checks proper arguments values
             if (isinstance(lon, float) or isinstance(lon, int)) and \
                (isinstance(lat, float) or isinstance(lat, int)) and \
@@ -174,9 +174,8 @@ def _lonlat(build_wcs_func):
 
         lon,lat : floats
             the sky coordinates of the center of projection and
-        src_frame :  str, ('GALACTIC', 'EQUATORIAL')
-            the coordinate system of the longitude and latitude
-    """, foot_docstring="""
+        src_frame :  keyword, str, ('GALACTIC', 'EQUATORIAL')
+            the coordinate system of the longitude and latitude (default EQUATORIAL)""", foot_docstring="""
     Notes
     -----
     You can access a function using only catalogs with the ._coord() method
