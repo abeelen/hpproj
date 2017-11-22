@@ -482,9 +482,7 @@ def cutsky(lonlat=None, maps=None, patch=None, coordframe=DEFAULT_COORDFRAME, ct
                                               'doContour': True}), # optionnal
          ... ]
          ```
-    patch : array of [int, float] proj_type.upper()
-    if proj_type not in VALID_PROJ:
-        raise ValueError('Unsupported projection')
+    patch : array of [int, float]
         [int] the number of pixels and
         [float] the size of the pixel [arcmin]
     coordframe : str

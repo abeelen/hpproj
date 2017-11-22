@@ -69,7 +69,7 @@ def update_docstring(fct, skip=0, head_docstring=None, foot_docstring=None):
     if head_docstring:
         docstring += head_docstring
 
-    docstring += '\n'.join(str(fct.__doc__).split('\n')[skip:])
+    docstring += '\n'+'\n'.join(str(fct.__doc__).split('\n')[skip:])
 
     if foot_docstring:
         docstring += foot_docstring
@@ -118,8 +118,7 @@ def _hpmap(hphdu_func):
 
         hp_map : array_like
             healpix map with corresponding
-        hp_header : :class:`astropy.fits.header.Header`
-    """, foot_docstring="""
+        hp_header : :class:`astropy.fits.header.Header`""", foot_docstring="""
     Notes
     -----
     You can access a function using only catalogs with the ._coord() method
