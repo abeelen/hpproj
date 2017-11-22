@@ -1,7 +1,7 @@
 master
 ======
 
-Version 0.7.3
+Version 0.7.4
 =============
 
 Fixed
@@ -10,6 +10,7 @@ Fixed
 * docstring glitch on decorator
 * bug in function decorator
 * documentation on internal calls & limitations
+* bug when reading nested healpix maps
 
 Version 0.7.0
 =============
