@@ -727,7 +727,7 @@ def gen_hpmap(maps):
     """
     for filename, i_map, i_header in maps:
         if isinstance(i_map, str):
-            i_map = hp.read_map(i_map, verbose=False)
+            i_map = hp.read_map(i_map, verbose=False, nest=None)
             i_map = hp.ma(i_map)
         yield filename, fits.ImageHDU(i_map, fits.Header(i_header))
 
@@ -753,7 +753,7 @@ def build_hpmap(filenames, low_mem=True):
         if low_mem is True:
             hp_map = filename
         else:
-            hp_map = hp.read_map(filename, verbose=False)
+            hp_map = hp.read_map(filename, verbose=False, nest=None)
             hp_map = hp.ma(hp_map)
         hp_maps.append((filename, hp_map, hp_header))
     return hp_maps
