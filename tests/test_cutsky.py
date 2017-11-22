@@ -51,6 +51,25 @@ def generate_hpmap(tmpdir_factory):
     hp.write_map(str(tmpfile), hp_map, nest=hp_is_nest(hp_header), extra_header=hp_header.items())
     return ([(str(tmpfile), {'legend': 'tmpfile'})], hp_map, hp_key)
 
+@pytest.fixture(scope='session')
+def generate_mis_hpmap(tmpdir_factory):
+
+    """Generate an uniform healpix map"""
+
+    nside = 2**6
+    hp_map = np.ones(hp.nside2npix(nside))
+    hp_header = {'NSIDE': nside,
+                 'ORDERING': 'RING',
+                 'COORDSYS': 'C'}
+    hp_key = "%s_%s_%s" % (hp_header['NSIDE'], hp_header['ORDERING'], hp_celestial(hp_header).name)
+
+    tmpfile = tmpdir_factory.mktemp("data").join("tmpfile.fits")
+
+    # Removing COORDSYS from header
+    hp_header.pop('COORDSYS')
+    hp.write_map(str(tmpfile), hp_map, nest=hp_is_nest(hp_header), extra_header=hp_header.items())
+    return ([(str(tmpfile), {'legend': 'tmpfile'})], hp_map, hp_key)
+
 
 # TODO : what happen when file do not exist or are not healpix maps
 def test_CutSky_init(generate_hpmap):
@@ -203,6 +222,8 @@ class TestCutSky:
 
         hp_map, hp_map_data, hp_key = generate_hpmap
         filename, opt = hp_map[0]
+
+        # Old interface
         old_hpmap = {opt['legend']: {'filename': filename, 'doContour': True}}
 
         result = cutsky([0, 0], old_hpmap)
@@ -210,6 +231,34 @@ class TestCutSky:
         assert result[0]['legend'] == opt['legend']
         npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
         assert result[0]['fits'].header['doContour'] is True
+        assert result[0]['phot'][0]['aperture_sum'] == 0.0
+
+        #New interface
+        new_hpmap = [(filename, {'legend': opt['legend']})]
+        result = cutsky([0, 0], new_hpmap)
+        assert len(result) == 1
+        assert result[0]['legend'] == opt['legend']
+        npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
+        assert result[0]['fits'].header['doContour'] is False
+        assert result[0]['phot'][0]['aperture_sum'] == 0.0
+
+    def test_cutsky_misheader(self, generate_mis_hpmap):
+
+        hp_map, hp_map_data, hp_key = generate_mis_hpmap
+        filename, opt = hp_map[0]
+
+        new_hpmap = [(filename, {'legend': opt['legend']})]
+
+        with pytest.raises(ValueError):
+            result = cutsky([0, 0], new_hpmap)
+
+        new_hpmap = [(filename, {'legend': opt['legend'], 'COORDSYS': 'C'})]
+        result = cutsky([0, 0], new_hpmap)
+
+        assert len(result) == 1
+        assert result[0]['legend'] == opt['legend']
+        npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
+        assert result[0]['fits'].header['doContour'] is False
         assert result[0]['phot'][0]['aperture_sum'] == 0.0
 
     def test_main(self, generate_hpmap):
