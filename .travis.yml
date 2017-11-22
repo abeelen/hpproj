@@ -22,8 +22,6 @@ addons:
 
 matrix:
   include:
-  - python: 2.7
-    env: ASTROPY_VERSION=development
   - python: 3.6
     env: ASTROPY_VERSION=development
   - python: 2.7
