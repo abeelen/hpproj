@@ -18,7 +18,7 @@ r"""
 HealPix Projection
 """
 
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 
 from .hp_helper import *
 from .cutsky import *
