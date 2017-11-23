@@ -332,15 +332,14 @@ class CutSky(object):
             proj_im.set_data(patch)
             proj_im.set_clim(vmin=patch.min(), vmax=patch.max())
 
-            # TODO: Use the contour in other plots
             # Insure we do have increasing values even when patch.std == 0
             levels = np.arange(2, 10) * (np.max([patch.std(), 1e-12]))
             if patch_header['doContour']:
                 LOGGER.debug('contouring ' + legend)
-                proj_cont = ax_wcs.contour(
+                ax_wcs.contour(
                     patch, levels=levels, colors="white", interpolation='bicubic')
-            else:
-                proj_cont = None
+
+            # TODO: Retrive and use the contour in other plots
 
             LOGGER.debug('saving ' + legend)
 
