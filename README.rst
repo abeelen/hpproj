@@ -59,7 +59,8 @@ License
 
 This project is licensed under the LGPL+3.0 license.
 
-|build-gitlabCI| |build-travis| |codeclimate| |codehealth| |coverage|
+|build-gitlabCI| |build-travis| |codeclimate| |codehealth| |coverage| |sonarqube|
+
 
 .. |pypi| image:: https://img.shields.io/pypi/v/hpproj.svg?maxAge=2592000
     :alt: Latest Version
@@ -101,7 +102,12 @@ This project is licensed under the LGPL+3.0 license.
    :alt: Code Health
    :target: https://landscape.io/github/abeelen/hpproj/master
 
+	    
+.. |sonarqube| image:: https://sonarcloud.io//api/badges/gate?key=hpproj&metric=code_smells
+   :alt: SonarQube
+   :target: https://sonarcloud.io/dashboard/index/hpproj
 
+	    
 .. |coverage| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/coverage.svg
     :alt: Master Coverage
 
@@ -109,3 +115,6 @@ This project is licensed under the LGPL+3.0 license.
 .. |rtd| image:: https://readthedocs.org/projects/hpproj/badge/?version=latest
     :alt: Read the doc
     :target: http://hpproj.readthedocs.io/
+
+	     
+https://sonarcloud.io//api/badges/gate?key=hpproj&metric=code_smells&blinking=true
