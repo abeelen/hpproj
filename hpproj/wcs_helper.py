@@ -138,18 +138,24 @@ def _lonlat(build_wcs_func):
     def decorator(*args, **kwargs):
         """Transform a function call from (lon, lat, src_frame,*) to (coord, *)"""
         if len(args) > 1:
+            if isinstance(args[0], SkyCoord):
+                return build_wcs_func(*args, **kwargs)
+
+            # Otherwise proceed to fiddling the arguments..
             lon, lat = args[0:2]
             src_frame = kwargs.pop('src_frame', 'EQUATORIAL').lower()
+
             # Checks proper arguments values
-            if (isinstance(lon, float) or isinstance(lon, int)) and \
-               (isinstance(lat, float) or isinstance(lat, int)) and \
-               (src_frame in VALID_GALACTIC or src_frame in VALID_EQUATORIAL):
-                frame = equiv_celestial(src_frame)
-                coord = SkyCoord(lon, lat, frame=frame, unit="deg")
-                # Ugly fix to modigy the args
-                args = list(args)
-                args.insert(2, coord)
-                args = tuple(args[2:])
+            assert isinstance(lon, float) or isinstance(lon, int), 'lon must be a float'
+            assert isinstance(lat, float) or isinstance(lat, int), 'latitude must be a float'
+            assert src_frame in VALID_GALACTIC or src_frame in VALID_EQUATORIAL, 'src_frame must be a valid frame'
+
+            frame = equiv_celestial(src_frame)
+            coord = SkyCoord(lon, lat, frame=frame, unit="deg")
+            # Ugly fix to modigy the args
+            args = list(args)
+            args.insert(2, coord)
+            args = tuple(args[2:])
         return build_wcs_func(*args, **kwargs)
 
     decorator._coord = build_wcs_func
