@@ -179,7 +179,7 @@ class CutSky(object):
 
         # Build the target WCS header
         wcs = build_wcs(coord_in, pixsize=self.pixsize / 60.,
-                        npix=self.npix, proj_sys=coordframe, proj_type=self.ctype)
+                        shape_out=(self.npix, self.npix), proj_sys=coordframe, proj_type=self.ctype)
 
         cuts = []
         for group, maps in groupby(self.maps, key=hpmap_key):
@@ -194,7 +194,7 @@ class CutSky(object):
 
             # Extract mask & pixels, common for all healpix maps of this
             # group
-            mask, ipix = hp_to_wcs_ipx(hp_header, wcs, npix=self.npix)
+            mask, ipix = hp_to_wcs_ipx(hp_header, wcs, shape_out=(self.npix, self.npix))
 
             # Set up the figure, common for all healpix maps of this group
             LOGGER.info('cutting maps')

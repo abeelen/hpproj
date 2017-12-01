@@ -118,7 +118,7 @@ def rotate_frame(alon, alat, hp_header, wcs):
 
 
 @_hpmap
-def hp_to_wcs(hp_hdu, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, order=0):
+def hp_to_wcs(hp_hdu, wcs, shape_out=DEFAULT_SHAPE_OUT, order=0):
     """Project an Healpix map on a wcs header, using nearest neighbors.
 
     Parameters
@@ -129,8 +129,6 @@ def hp_to_wcs(hp_hdu, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, order=0):
         wcs object to project with
     shape_out : tuple
         shape of the output map (n_y, n_x)
-    npix : int
-        number of pixels in the final square map, superseed shape_out
     order : int (0|1)
         order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
 
@@ -139,9 +137,6 @@ def hp_to_wcs(hp_hdu, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, order=0):
     array_like
         the projected map in a 2D array of shape shape_out
     """
-
-    if npix:
-        shape_out = (npix, npix)
 
     # Array of pixels centers -- from the astropy.wcs documentation :
     #
@@ -178,7 +173,7 @@ def hp_to_wcs(hp_hdu, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None, order=0):
     return proj_map.filled()
 
 
-def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
+def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT):
     """Return the indexes of pixels of a given wcs and shape_out,
     within a nside healpix map.
 
@@ -190,8 +185,6 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
         wcs object to project with
     shape_out : tuple
         shape of the output map (n_y, n_x)
-    npix : int
-        number of pixels in the final square map, superseed shape_out
 
     Returns
     -------
@@ -207,9 +200,6 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT, npix=None):
     proj_map = np.ma.array(np.zeros(shape_out), mask=~mask, fill_value=np.nan)
     proj_map[mask] = healpix_map[ipix]
     """
-
-    if npix:
-        shape_out = (npix, npix)
 
     # Array of pixels centers -- from the astropy.wcs documentation :
     #
@@ -267,8 +257,8 @@ def hp_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('GALA
 
     proj_sys, proj_type = projection
 
-    wcs = build_wcs(coord, pixsize, npix=npix, proj_sys=proj_sys, proj_type=proj_type)
-    proj_map = hp_to_wcs(hp_hdu, wcs, npix=npix, order=order)
+    wcs = build_wcs(coord, pixsize, shape_out=(npix, npix), proj_sys=proj_sys, proj_type=proj_type)
+    proj_map = hp_to_wcs(hp_hdu, wcs, shape_out=(npix, npix), order=order)
 
     return fits.PrimaryHDU(proj_map, wcs.to_header(relax=0x20000))
 

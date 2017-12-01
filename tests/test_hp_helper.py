@@ -99,11 +99,6 @@ def test_hp_to_wcs():
     assert sub_map.shape == tuple(shape_out)
     npt.assert_array_equal(sub_map, 1)
 
-    # Test npix option
-    sub_map = hp_to_wcs(hp_hdu, wcs, npix=512, order=0)
-    assert sub_map.shape == tuple(shape_out)
-    npt.assert_array_equal(sub_map, 1)
-
     # Test order = 1
     sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=1)
     npt.assert_allclose(sub_map, 1, rtol=1e-15)  # hp.get_interp_val precision
@@ -151,9 +146,9 @@ def test_hp_to_wcs_ipx():
     npt.assert_array_equal(sub_ipx, ipix)
 
     # Test different frame
-    wcs = build_wcs(coord, pixsize, npix=1, proj_sys="G")
+    wcs = build_wcs(coord, pixsize, shape_out=(1, 1), proj_sys="G")
     sub_mask, sub_ipx = hp_to_wcs_ipx(
-        hp_header, wcs, npix=1, shape_out=shape_out)
+        hp_header, wcs, shape_out=shape_out)
     npt.assert_array_equal(sub_mask, True)
     npt.assert_array_equal(sub_ipx, ipix)
 

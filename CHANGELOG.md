@@ -4,6 +4,7 @@ master
 Fixed
 -----
 * Refactoring : split wcs_helper from hp_helper
+* Refactoring : Remove npix arguments from internal functions
 
 Version 0.7.4
 =============

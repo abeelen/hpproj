@@ -95,13 +95,11 @@ class TestBuildWCS:
         npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
 
-        wcs = build_wcs(coord, pixsize, shape_out, npix=512, proj_sys='G')
+        wcs = build_wcs(coord, pixsize, shape_out, proj_sys='G')
 
         assert wcs.wcs.naxis == 2
         npt.assert_array_equal(
             wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg])
-        npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 256.5])
         npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])
 
         coord = coord.galactic
@@ -138,13 +136,13 @@ class TestBuildWCS:
             wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN', 'INDEX'])
 
         wcs = build_wcs_cube(
-            coord, index, pixsize, shape_out, npix=512, proj_sys='G')
+            coord, index, pixsize, shape_out, proj_sys='G')
 
         assert wcs.wcs.naxis == 3
         npt.assert_array_equal(
             wcs.wcs.crval, [coord.galactic.l.deg, coord.galactic.b.deg, 1])
         npt.assert_array_equal(wcs.wcs.cdelt, [-1, 1, 1])
-        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 256.5, 1])
+        npt.assert_array_equal(wcs.wcs.crpix, [256.5, 512.5, 1])
         npt.assert_array_equal(
             wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN', 'INDEX'])
 
@@ -223,8 +221,5 @@ def test_build_wcs_2pts():
         wcs.wcs.crpix, [shape_out[1] * relative_pos[0], shape_out[0] / 2])
     npt.assert_array_equal(wcs.wcs.ctype, ['RA---TAN', 'DEC--TAN'])
 
-    wcs = build_wcs_2pts(coords, npix=shape_out[
-                         0], relative_pos=relative_pos, proj_sys='GALACTIC')
-    npt.assert_array_equal(
-        wcs.wcs.crpix, [shape_out[0] * relative_pos[0], shape_out[0] / 2])
+    wcs = build_wcs_2pts(coords, shape_out=shape_out, relative_pos=relative_pos, proj_sys='GALACTIC')
     npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])

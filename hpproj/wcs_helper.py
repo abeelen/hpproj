@@ -173,7 +173,7 @@ def _lonlat(build_wcs_func):
 
 
 @_lonlat
-def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
+def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
 
     Parameters
@@ -184,8 +184,6 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_
         size of the pixel (in degree)
     shape_out : tuple
         shape of the output map  (n_y,n_x)
-    npix : int
-        number of pixels in the final square map, the reference pixel will be at the center, superseed shape_out
     proj_sys : str ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the plate (from HEALPIX maps....)
     proj_type : str ('TAN', 'SIN', 'GSL', ...)
@@ -202,9 +200,6 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_
     proj_type = proj_type.upper()
     if proj_type not in VALID_PROJ:
         raise ValueError('Unvupported projection')
-
-    if npix:
-        shape_out = (npix, npix)
 
     wcs = WCS(naxis=2)
 
@@ -219,7 +214,7 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_
 
 
 @_lonlat
-def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_sys='EQUATORIAL', proj_type='TAN'):
+def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 3D cube, where the 3rd dimension is an index
 
     Parameters
@@ -232,8 +227,6 @@ def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix
         size of the pixel (in degree)
     shape_out : tuple
         shape of the output map (n_y, n_x)
-    npix : int
-        number of pixels in the final map, the reference pixel will be at the center, override shape_out
     proj_sys : str ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the plate (from HEALPIX maps....)
     proj_type : str ('TAN', 'SIN', 'GSL', ...)
@@ -250,9 +243,6 @@ def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, npix
     proj_type = proj_type.upper()
     if proj_type not in VALID_PROJ:
         raise ValueError('Unvupported projection')
-
-    if npix:
-        shape_out = (npix, npix)
 
     wcs = WCS(naxis=3)
     wcs.wcs.crpix = np.append((np.array(shape_out, dtype=np.float) + 1) / 2, 1)
@@ -305,7 +295,7 @@ def relative_pixsize(coords, pixsize, shape_out, relative_pos):
     return pixsize, relative_pos
 
 
-def build_wcs_2pts(coords, pixsize=None, shape_out=DEFAULT_SHAPE_OUT, npix=None, proj_sys='EQUATORIAL', proj_type='TAN', relative_pos=(2. / 5, 3. / 5)):
+def build_wcs_2pts(coords, pixsize=None, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATORIAL', proj_type='TAN', relative_pos=(2. / 5, 3. / 5)):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
 
     Parameters
@@ -316,8 +306,6 @@ def build_wcs_2pts(coords, pixsize=None, shape_out=DEFAULT_SHAPE_OUT, npix=None,
         size of the pixel (in degree) (default: None, use relative_pos and shape_out)
     shape_out : tuple
         shape of the output map  (n_y,n_x)
-    npix : int
-        number of pixels in the final square map, superseed shape_out
     coordsys : str ('GALACTIC', 'EQUATORIAL')
         the coordinate system of the plate (from HEALPIX maps....) will be rotated anyway
     proj_type : str ('TAN', 'SIN', 'GSL', ...)
@@ -339,9 +327,6 @@ def build_wcs_2pts(coords, pixsize=None, shape_out=DEFAULT_SHAPE_OUT, npix=None,
     of the image
 
     """
-
-    if npix:
-        shape_out = (npix, npix)
 
     frame = equiv_celestial(proj_sys)
 
