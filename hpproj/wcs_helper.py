@@ -102,12 +102,10 @@ def get_lonlat(coord, proj_sys):
 
     if proj_sys in VALID_EQUATORIAL:
         coord = coord.transform_to(ICRS)
-        lon = coord.ra.deg
-        lat = coord.dec.deg
+        lon, lat = coord.ra.deg, coord.dec.deg
     elif proj_sys in VALID_GALACTIC:
         coord = coord.transform_to(Galactic)
-        lon = coord.l.deg
-        lat = coord.b.deg
+        lon, lat = coord.l.deg, coord.b.deg
     else:
         raise ValueError('Unsuported coordinate system for the projection')
 
@@ -137,9 +135,7 @@ def _lonlat(build_wcs_func):
 
     def decorator(*args, **kwargs):
         """Transform a function call from (lon, lat, src_frame,*) to (coord, *)"""
-        if len(args) > 1:
-            if isinstance(args[0], SkyCoord):
-                return build_wcs_func(*args, **kwargs)
+        if len(args) > 1 and not isinstance(args[0], SkyCoord):
 
             # Otherwise proceed to fiddling the arguments..
             lon, lat = args[0:2]

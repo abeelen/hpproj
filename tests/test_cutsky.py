@@ -105,18 +105,6 @@ def test_CutSky_cut_fits(generate_hpmap):
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
 
 
-def test_CutSky_cut_fits(generate_hpmap):
-
-    hp_map, hp_map_data, hp_key = generate_hpmap
-    filename, opt = hp_map[0]
-
-    my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result = my_cutsky.cut_fits([0, 0])
-    assert len(result) == 1
-    assert result[0]['legend'] == opt['legend']
-    npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
-
-
 def test_CutSky_cut_fits_assert(generate_hpmap):
 
     hp_map, hp_map_data, hp_key = generate_hpmap
