@@ -51,6 +51,7 @@ def generate_hpmap(tmpdir_factory):
     hp.write_map(str(tmpfile), hp_map, nest=hp_is_nest(hp_header), extra_header=hp_header.items())
     return ([(str(tmpfile), {'legend': 'tmpfile'})], hp_map, hp_key)
 
+
 @pytest.fixture(scope='session')
 def generate_mis_hpmap(tmpdir_factory):
 

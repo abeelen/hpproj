@@ -14,7 +14,7 @@ import sys
 import argparse
 import logging
 
-from .hp_helper import VALID_PROJ
+from .wcs_helper import VALID_PROJ
 
 try:  # pragma: py3
     from configparser import ConfigParser, ExtendedInterpolation

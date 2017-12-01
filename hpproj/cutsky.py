@@ -34,10 +34,10 @@ from astropy.coordinates import SkyCoord
 from photutils import CircularAperture
 from photutils import aperture_photometry
 
-from .hp_helper import build_wcs, hp_to_wcs_ipx
-from .hp_helper import VALID_EQUATORIAL
-from .hp_helper import equiv_celestial
-from .hp_helper import build_hpmap, gen_hpmap, hpmap_key
+from .wcs_helper import VALID_EQUATORIAL
+from .wcs_helper import equiv_celestial, build_wcs
+from .hp_helper import build_hpmap, gen_hpmap
+from .hp_helper import hp_to_wcs_ipx, hpmap_key
 
 from .parse import ini_main
 from .parse import DEFAULT_NPIX, DEFAULT_PIXSIZE, DEFAULT_COORDFRAME, DEFAULT_CTYPE
@@ -533,7 +533,7 @@ def save_result(output, result):
         # So for now...
         result['fits'].data = result['fits'].data.filled()
         hdulist = fits.HDUList([fits.PrimaryHDU(), result['fits']])
-        hdulist.writeto(filename + '.fits', clobber=True)
+        hdulist.writeto(filename + '.fits', overwrite=True)
 
     if output['png']:
         png = open(filename + '.png', 'wb')

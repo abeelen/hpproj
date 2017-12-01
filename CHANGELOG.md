@@ -1,6 +1,10 @@
 master
 ======
 
+Fixed
+-----
+* Refactoring : split wcs_helper from hp_helper
+
 Version 0.7.4
 =============
 
