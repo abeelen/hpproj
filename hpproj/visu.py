@@ -21,9 +21,13 @@ from .hp_helper import build_wcs, hp_to_wcs, equiv_celestial, _hpmap
 __all__ = ['view', 'mollview', 'orthview', 'carview', 'merview',
            'coeview', 'bonview', 'pcoview', 'tscview']
 
+# pv matrix for some of the projection
+PV = {'COE': [(1, 1, -20), (2, 1, -70)],
+      'BON': [(1, 1, 0), (2, 1, 45)], }
+
 
 @_hpmap
-def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', aspect=1., pv=None):
+def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', aspect=1.):
     """projection of the full sky
 
     Parameters
@@ -40,8 +44,6 @@ def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', asp
         any projection system supported by WCS
     aspect : float
         the resulting figure aspect ratio 1:aspect_ratio
-    pv : array_like
-        2x2 PV matrix needed by some projection
 
     Returns
     -------
@@ -54,6 +56,8 @@ def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', asp
 
     shape = (np.asarray([1., aspect]) * npix).astype(np.int)
     _wcs = build_wcs._coord(coord, 360. / npix, shape, proj_sys=proj_sys, proj_type=proj_type)
+
+    pv = PV.get(proj_type, None)
     if pv:
         _wcs.wcs.set_pv(pv)
     _data = hp_to_wcs._hphdu(hp_hdu, _wcs, shape[::-1])
@@ -76,13 +80,13 @@ update_wrapper(merview, view)
 merview.__name__ = "merview"
 merview.__doc__ = "Mercator " + merview.__doc__
 
-coeview = partial(view, proj_type='COE', pv=[(1, 1, -20), (2, 1, -70)])
+coeview = partial(view, proj_type='COE')
 update_wrapper(coeview, view)
 coeview.__name__ = "coeview"
 coeview.__doc__ = "Conic Equal Area " + coeview.__doc__
 
 # TODO: Check ratio
-bonview = partial(view, proj_type='BON', aspect=4. / 5, pv=[(1, 1, 0), (2, 1, 45)])
+bonview = partial(view, proj_type='BON', aspect=4. / 5)
 update_wrapper(bonview, view)
 bonview.__name__ = "bonview"
 bonview.__doc__ = "Bonne's Equal Area " + bonview.__doc__

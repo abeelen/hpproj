@@ -12,6 +12,7 @@ from astropy.io import fits
 
 __all__ = ['_hpmap', 'update_docstring']
 
+
 # Decorator and decorated functions
 def update_docstring(fct, skip=0, head_docstring=None, foot_docstring=None):
     """Update the docstring of a decorated function by insterting a docstring at the beginning
@@ -86,9 +87,9 @@ def _hpmap(hphdu_func):
 
         or
 
-        hp_map : array_like
-            healpix map with corresponding
-        hp_header : :class:`astropy.fits.header.Header`""", foot_docstring="""
+    hp_map : array_like
+        healpix map with corresponding
+    hp_header : :class:`astropy.fits.header.Header`""", foot_docstring="""
     Notes
     -----
     You can access a function using only catalogs with the ._coord() method

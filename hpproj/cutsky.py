@@ -200,13 +200,8 @@ class CutSky(object):
             LOGGER.info('cutting maps')
 
             # Now the actual healpix map reading and projection
-            for filename, i_hdu in gen_hpmap(maps):
+            for filename, i_hdu in self._to_process(gen_hpmap(maps)):
                 legend = i_hdu.header['legend']
-
-                # Skip if not in the maps_selection
-                if self._no_process(legend, filename):
-                    continue
-
                 patch = np.ma.array(
                     np.zeros((self.npix, self.npix)), mask=~mask, fill_value=np.nan)
                 patch[mask] = i_hdu.data[ipix]
@@ -223,23 +218,13 @@ class CutSky(object):
 
         return cuts
 
-    def _no_process(self, legend, filename):
-        """Helper function to decide if we process a particular map
+    def _to_process(self, gen_hpmap_iter):
+        """Iterator to filter the gen_hpmap iterator depending on map selection"""
 
-        Parameters
-        ----------
-        legend, filename : str
-            string that define a map
-        Returns
-        -------
-        bool
-        """
-
-        stop_process = False
-        if self.maps_selection and (legend not in self.maps_selection and filename not in self.maps_selection):
-            stop_process = True
-
-        return stop_process
+        for filename, i_hdu in gen_hpmap_iter:
+            legend = i_hdu.header['legend']
+            if not self.maps_selection or (legend in self.maps_selection or filename in self.maps_selection):
+                yield filename, i_hdu
 
     def _get_cuts(self, lonlat=None, coordframe=None, maps_selection=None):
         """Get map cuts if they are already made, or launch cut_fits

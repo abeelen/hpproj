@@ -102,12 +102,10 @@ def get_lonlat(coord, proj_sys):
 
     if proj_sys in VALID_EQUATORIAL:
         coord = coord.transform_to(ICRS)
-        lon = coord.ra.deg
-        lat = coord.dec.deg
+        lon, lat = coord.ra.deg, coord.dec.deg
     elif proj_sys in VALID_GALACTIC:
         coord = coord.transform_to(Galactic)
-        lon = coord.l.deg
-        lat = coord.b.deg
+        lon, lat = coord.l.deg, coord.b.deg
     else:
         raise ValueError('Unsuported coordinate system for the projection')
 
@@ -137,19 +135,23 @@ def _lonlat(build_wcs_func):
 
     def decorator(*args, **kwargs):
         """Transform a function call from (lon, lat, src_frame,*) to (coord, *)"""
-        if len(args) > 1:
+        if len(args) > 1 and not isinstance(args[0], SkyCoord):
+
+            # Otherwise proceed to fiddling the arguments..
             lon, lat = args[0:2]
             src_frame = kwargs.pop('src_frame', 'EQUATORIAL').lower()
+
             # Checks proper arguments values
-            if (isinstance(lon, float) or isinstance(lon, int)) and \
-               (isinstance(lat, float) or isinstance(lat, int)) and \
-               (src_frame in VALID_GALACTIC or src_frame in VALID_EQUATORIAL):
-                frame = equiv_celestial(src_frame)
-                coord = SkyCoord(lon, lat, frame=frame, unit="deg")
-                # Ugly fix to modigy the args
-                args = list(args)
-                args.insert(2, coord)
-                args = tuple(args[2:])
+            assert isinstance(lon, float) or isinstance(lon, int), 'lon must be a float'
+            assert isinstance(lat, float) or isinstance(lat, int), 'latitude must be a float'
+            assert src_frame in VALID_GALACTIC or src_frame in VALID_EQUATORIAL, 'src_frame must be a valid frame'
+
+            frame = equiv_celestial(src_frame)
+            coord = SkyCoord(lon, lat, frame=frame, unit="deg")
+            # Ugly fix to modigy the args
+            args = list(args)
+            args.insert(2, coord)
+            args = tuple(args[2:])
         return build_wcs_func(*args, **kwargs)
 
     decorator._coord = build_wcs_func
@@ -161,10 +163,10 @@ def _lonlat(build_wcs_func):
 
         or
 
-        lon,lat : floats
-            the sky coordinates of the center of projection and
-        src_frame :  keyword, str, ('GALACTIC', 'EQUATORIAL')
-            the coordinate system of the longitude and latitude (default EQUATORIAL)""", foot_docstring="""
+    lon,lat : floats
+        the sky coordinates of the center of projection and
+    src_frame :  keyword, str, ('GALACTIC', 'EQUATORIAL')
+        the coordinate system of the longitude and latitude (default EQUATORIAL)""", foot_docstring="""
     Notes
     -----
     You can access a function using only catalogs with the ._coord() method

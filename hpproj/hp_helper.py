@@ -72,17 +72,17 @@ def hp_is_nest(hp_header):
         True if the header is nested
     """
 
-    ordering = hp_header.get('ORDERING')
+    ordering = hp_header.get('ORDERING', None)
 
-    if ordering:
-        if ordering.lower() == 'nested' or ordering.lower() == 'nest':
-            return True
-        elif ordering.lower() == 'ring':
-            return False
-        else:
-            raise ValueError("Unknown ordering in healpix header")
-    else:
+    if not ordering:
         raise ValueError("Np ordering in healpix header")
+
+    if ordering.lower() in ['nested', 'nest']:
+        return True
+    elif ordering.lower() == 'ring':
+        return False
+    else:
+        raise ValueError("Unknown ordering in healpix header")
 
 
 def rotate_frame(alon, alat, hp_header, wcs):
