@@ -80,7 +80,7 @@ This project is licensed under the LGPL+3.0 license.
 
 
 .. |pyversions| image:: https://img.shields.io/pypi/pyversions/hpproj.svg?maxAge=2592000
-   :alt: pyversions
+1;5002;0c   :alt: pyversions
 
 
 .. |build-gitlabCI| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/build.svg
@@ -116,5 +116,3 @@ This project is licensed under the LGPL+3.0 license.
     :alt: Read the doc
     :target: http://hpproj.readthedocs.io/
 
-	     
-https://sonarcloud.io//api/badges/gate?key=hpproj&metric=code_smells&blinking=true
