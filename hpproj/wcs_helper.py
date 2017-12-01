@@ -161,10 +161,10 @@ def _lonlat(build_wcs_func):
 
         or
 
-        lon,lat : floats
-            the sky coordinates of the center of projection and
-        src_frame :  keyword, str, ('GALACTIC', 'EQUATORIAL')
-            the coordinate system of the longitude and latitude (default EQUATORIAL)""", foot_docstring="""
+    lon,lat : floats
+        the sky coordinates of the center of projection and
+    src_frame :  keyword, str, ('GALACTIC', 'EQUATORIAL')
+        the coordinate system of the longitude and latitude (default EQUATORIAL)""", foot_docstring="""
     Notes
     -----
     You can access a function using only catalogs with the ._coord() method
