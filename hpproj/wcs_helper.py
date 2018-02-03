@@ -29,7 +29,8 @@ VALID_EQUATORIAL = ['celestial2000', 'equatorial', 'eq', 'c', 'q', 'fk4', 'fk5',
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
 
 __all__ = ['build_wcs', 'build_wcs_cube', 'build_wcs_2pts',
-           'build_ctype', 'equiv_celestial', 'get_lonlat']
+           'build_ctype', 'equiv_celestial', 'get_lonlat',
+           'build_wcs_profile']
 
 
 def equiv_celestial(frame):
@@ -172,6 +173,20 @@ def _lonlat(build_wcs_func):
     You can access a function using only catalogs with the ._coord() method
     """)
     return decorator
+
+
+def build_wcs_profile(pixsize=0.01):
+
+    wcs = WCS(naxis=1)
+
+    # CRPIX IS in Fortran convention -> first pixel edge is 0
+    wcs.wcs.crpix = [0.5]
+    wcs.wcs.cdelt = [pixsize]
+    wcs.wcs.crval = [0]
+
+    wcs.wcs.ctype = ["RADIUS"]
+
+    return wcs
 
 
 @_lonlat

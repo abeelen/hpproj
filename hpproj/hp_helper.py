@@ -14,11 +14,11 @@ import numpy as np
 import healpy as hp
 
 from astropy.io import fits
-from astropy.wcs import utils as wcs_utils
-from astropy.coordinates import UnitSphericalRepresentation
+from astropy.wcs import WCS, utils as wcs_utils
+from astropy.coordinates import SkyCoord, UnitSphericalRepresentation
 from astropy import units as u
 
-from .wcs_helper import equiv_celestial, build_wcs
+from .wcs_helper import equiv_celestial, build_wcs, build_wcs_profile, get_lonlat
 from .wcs_helper import DEFAULT_SHAPE_OUT
 
 from .decorator import _hpmap
@@ -26,7 +26,8 @@ from .decorator import _hpmap
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
 
 __all__ = ['hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_to_wcs_ipx',
-           'hp_project', 'gen_hpmap', 'build_hpmap', 'hpmap_key']
+           'hp_project', 'gen_hpmap', 'build_hpmap', 'hpmap_key',
+           'wcs_to_profile', 'hp_to_profile', 'hp_profile']
 
 
 def hp_celestial(hp_header):
@@ -115,6 +116,90 @@ def rotate_frame(alon, alat, hp_header, wcs):
         alat = coords.data.lat.deg
 
     return alon, alat
+
+
+def wcs_to_profile(hdu, wcs, shape_out=DEFAULT_SHAPE_OUT[0]):
+    """Centered profile from 2D map
+
+    Parameters
+    ----------
+    hdu : :class:`astropy.fits.ImageHDU`
+        hdu containing the 2D array and corresponding header, the profile will be made from the CRVAL position
+    wcs : :class:`astropy.wcs.WCS`
+        wcs object to describe the radius of the profile
+    shape_out : int
+        shape of the output profile
+
+    Returns
+    -------
+    :class:`astropy.fits.ImageHDU`
+        1D hdu image containing the profile and the corresponding header
+    """
+
+    frame = wcs_utils.wcs_to_celestial_frame(WCS(hdu.header)).name
+    coord = SkyCoord(hdu.header['CRVAL1'], hdu.header['CRVAL2'], unit="deg", frame=frame)
+
+    shape = hdu.shape
+    yy, xx = np.indices(shape)
+    lon_arr, lat_arr = WCS(hdu.header).wcs_pix2world(xx, yy, 0)
+
+    coords = SkyCoord(lon_arr, lat_arr, unit="deg", frame=frame)
+    dist = coords.separation(coord).to(u.deg).value
+
+    r_edge = wcs.all_pix2world(np.arange(shape_out + 1) - 0.5, 0)[0]
+
+    hist, bin_edges = np.histogram(dist, bins=r_edge, weights=hdu.data)
+    hist_d, bin_edges_d = np.histogram(dist, bins=r_edge)
+
+    return hist / hist_d
+
+
+@_hpmap
+def hp_to_profile(hp_hdu, wcs, coord, shape_out=DEFAULT_SHAPE_OUT[0], std=False):
+    """Extract radial profile from healpix map
+
+    Parameters
+    ----------
+    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+        a pseudo ImageHDU with the healpix map and the associated header
+    wcs : :class:`astropy.wcs.WCS`
+        wcs object to describe the radius of the profile
+    coord : :class:`astropy.coordinate.SkyCoord`
+        the sky coordinate of the center of the profile
+    shape_out : int
+        shape of the output profile
+    std : bool
+        return the standard deviation
+
+    Returns
+    -------
+    :class:`astropy.fits.ImageHDU`
+        1D hdu image containing the profile and the corresponding header,
+        optionnaly a second ImageHDU containing the standard deviation
+    """
+
+    lon, lat = get_lonlat(coord, hp_hdu.header['COORDSYS'])
+
+    r_edge = wcs.all_pix2world(np.arange(shape_out + 1) - 0.5, 0)[0]
+
+    nside = hp_hdu.header['NSIDE']
+    nest = hp_is_nest(hp_hdu.header)
+    vec = hp.rotator.dir2vec(lon, lat, lonlat=True)
+
+    i_pix = [hp.query_disc(nside, vec, np.radians(radius), nest=nest, inclusive=False) for radius in r_edge]
+
+    # Only keep the pixels why are only present in the outer
+    # radius
+    a_pix = []
+    for in_pix, out_pix in zip(i_pix[:-1], i_pix[1:]):
+        a_pix.append(out_pix[~np.isin(out_pix, in_pix)])
+
+    profile = np.asarray([np.mean(hp_hdu.data[pix]) for pix in a_pix])
+    if not std:
+        return profile
+    else:
+        std_profile = np.asarray([np.std(hp_hdu.data[pix]) for pix in a_pix])
+        return profile, std_profile
 
 
 @_hpmap
@@ -260,7 +345,34 @@ def hp_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('GALA
     wcs = build_wcs(coord, pixsize, shape_out=(npix, npix), proj_sys=proj_sys, proj_type=proj_type)
     proj_map = hp_to_wcs(hp_hdu, wcs, shape_out=(npix, npix), order=order)
 
-    return fits.PrimaryHDU(proj_map, wcs.to_header(relax=0x20000))
+    return fits.ImageHDU(proj_map, wcs.to_header(relax=0x20000))
+
+
+@_hpmap
+def hp_profile(hp_hdu, coord, pixsize=0.01, npix=512):
+    """Project an healpix map at a single given position
+
+    Parameters
+    ----------
+    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+        a pseudo ImageHDU with the healpix map and the associated header to be projected
+    coord : :class:`astropy.coordinate.SkyCoord`
+        the sky coordinate of the center of the projection
+    pixsize : float
+        size of the pixel (in degree)
+    npix : int
+        number of pixels in the final map, the reference pixel will be at the center
+
+    Returns
+    -------
+    :class:`astropy.io.fits.PrimaryHDU`
+        containing the array and the corresponding header
+    """
+
+    wcs = build_wcs_profile(pixsize)
+    profile = hp_to_profile(hp_hdu, wcs, coord, shape_out=npix, std=False)
+
+    return fits.ImageHDU(profile, wcs.to_header(relax=0x20000))
 
 
 def gen_hpmap(maps):

@@ -9,6 +9,7 @@ import pytest
 
 from hpproj import equiv_celestial, build_ctype
 from hpproj import build_wcs, build_wcs_cube, build_wcs_2pts
+from hpproj import build_wcs_profile
 from hpproj import get_lonlat
 
 import numpy as np
@@ -223,3 +224,14 @@ def test_build_wcs_2pts():
 
     wcs = build_wcs_2pts(coords, shape_out=shape_out, relative_pos=relative_pos, proj_sys='GALACTIC')
     npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])
+
+
+def test_build_wcs_profile():
+
+    pixsize = 0.1
+    wcs = build_wcs_profile(pixsize)
+
+    npt.assert_equal(wcs.wcs.crval, [0])
+    npt.assert_equal(wcs.wcs.crpix, [0.5])
+    npt.assert_equal(wcs.wcs.cdelt, [pixsize])
+    assert wcs.wcs.ctype[0] == "RADIUS"

@@ -1,6 +1,10 @@
 master
 ======
 
+Added
+-----
+* Profile routine
+
 Fixed
 -----
 * Refactoring : split wcs_helper from hp_helper

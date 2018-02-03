@@ -10,14 +10,18 @@ import pytest
 from hpproj import hp_celestial, hp_is_nest
 from hpproj import hp_to_wcs, hp_to_wcs_ipx
 from hpproj import hp_project, gen_hpmap, hpmap_key
+from hpproj import hp_to_profile, hp_profile
+from hpproj import wcs_to_profile
 
-from hpproj import build_wcs
+from hpproj import build_wcs, build_wcs_profile
 
 import numpy as np
 from numpy import testing as npt
 import healpy as hp
 from astropy.coordinates import ICRS, Galactic, SkyCoord
 from astropy.io import fits
+from astropy import units as u
+from scipy.special import erf
 
 
 class TestHPCelestical:
@@ -62,14 +66,136 @@ class TestHPNest:
         assert is_nest == result
 
 
-def test_hp_to_wcs_exception():
-
+@pytest.fixture(scope='session')
+def uniform_hp_hdu():
     nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside))
+    hp_map = np.ones(hp.nside2npix(nside), dtype=np.float)
     hp_header = {'NSIDE': nside,
                  'ORDERING': 'RING',
                  'COORDSYS': 'C'}
-    hp_hdu = fits.ImageHDU(hp_map, fits.Header(hp_header))
+
+    return fits.ImageHDU(hp_map, fits.Header(hp_header))
+
+
+@pytest.fixture(scope='session')
+def gaussian_hp_hdu():
+    nside = 2**6
+    # Trick to get the center in the middle of the healpix pixel
+    i_pix = hp.ang2pix(nside, 0, 0, nest=False, lonlat=True)
+    lon, lat = hp.pix2ang(nside, i_pix, nest=False, lonlat=True)
+    coord = SkyCoord(lon, lat, unit="deg")
+    sigma = 5 * np.degrees(hp.nside2resol(nside))
+
+    hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
+    hp_header = {'NSIDE': nside,
+                 'ORDERING': 'RING',
+                 'COORDSYS': 'C'}
+
+    i_pix = hp.query_disc(nside, hp.dir2vec(coord.ra.deg, coord.dec.deg, lonlat=True), 20 * sigma, nest=False)
+    lon_arr, lat_arr = hp.pix2ang(nside, i_pix, lonlat=True, nest=False)
+    dist = SkyCoord(lon_arr, lat_arr, unit="deg").separation(coord).to(u.deg).value
+    hp_map[i_pix] += np.exp(-dist**2 / (2 * sigma**2))
+
+    return sigma, coord, fits.ImageHDU(hp_map, fits.Header(hp_header))
+
+
+@pytest.fixture(scope='session')
+def gaussians_hp_hdu():
+    np.random.seed(0)
+
+    nside = 2**6
+    n_gaussian = 100
+    sigma = 2 * np.degrees(hp.nside2resol(nside))
+
+    hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
+    hp_header = {'NSIDE': nside,
+                 'ORDERING': 'RING',
+                 'COORDSYS': 'C'}
+
+    coords = SkyCoord(np.random.uniform(0, 360, n_gaussian), np.degrees(np.arcsin(np.random.uniform(-1, 1, n_gaussian))), unit="deg")
+    for coord in coords:
+        i_pix = hp.query_disc(nside, hp.dir2vec(coord.ra.deg, coord.dec.deg, lonlat=True), 20 * sigma, nest=False)
+        lon_arr, lat_arr = hp.pix2ang(nside, i_pix, lonlat=True, nest=False)
+        dist = SkyCoord(lon_arr, lat_arr, unit="deg").separation(coord).to(u.deg).value
+        hp_map[i_pix] += np.exp(-dist**2 / (2 * sigma**2))
+
+    return sigma, coords, fits.ImageHDU(hp_map, fits.Header(hp_header))
+
+
+def test_wcs_to_profile():
+
+    npix = 65
+    sigma = 4
+    y_arr, x_arr = np.indices((npix, npix), dtype=np.float)
+    data = np.exp(- (x_arr - (npix - 1) / 2.)**2 / (2 * sigma**2) - (y_arr - (npix - 1) / 2.)**2 / (2 * sigma**2))
+    wcs = build_wcs(0, 0, src_frame='EQUATORIAL', pixsize=1, shape_out=(npix, npix))
+    hdu = fits.ImageHDU(data, wcs.to_header())
+
+    wcs = build_wcs_profile(2)
+    shape_out = npix / 3
+    profile = wcs_to_profile(hdu, wcs, shape_out)
+
+    r_in = wcs.wcs_pix2world(np.arange(shape_out) - 0.5, 0)[0]
+    r_out = wcs.wcs_pix2world(np.arange(shape_out) + 0.5, 0)[0]
+
+    # Pixel integrated gaussian
+    gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
+    # npt.assert_allclose(profile, gauss_pix, rtol=3e-2)
+    pass
+
+
+def test_hp_to_profile_uniform(uniform_hp_hdu):
+
+    hp_hdu = uniform_hp_hdu
+    coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 1, 10
+
+    wcs = build_wcs_profile(pixsize)
+    profile = hp_to_profile(hp_hdu, wcs, coord, shape_out=shape_out)
+
+    assert isinstance(profile, np.ndarray)
+    assert profile.shape[0] == shape_out
+    npt.assert_equal(profile, 1)
+
+    profile, std_profile = hp_to_profile(hp_hdu, wcs, coord, shape_out=shape_out, std=True)
+    npt.assert_equal(std_profile, 0)
+
+
+def test_hp_profile_uniform(uniform_hp_hdu):
+
+    hp_hdu = uniform_hp_hdu
+    coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 1, 10
+
+    profile = hp_profile(hp_hdu, coord, pixsize=pixsize, npix=shape_out)
+
+    assert isinstance(profile, fits.ImageHDU)
+    assert profile.header['NAXIS'] == 1
+    assert profile.header['NAXIS1'] == shape_out
+    assert profile.header['CDELT1'] == pixsize
+
+    assert profile.data.shape == (shape_out, )
+    npt.assert_equal(profile.data, 1)
+
+
+def test_hp_profile_gaussian(gaussian_hp_hdu):
+
+    sigma, coord, hp_hdu = gaussian_hp_hdu
+    pixsize, shape_out = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])), 20
+
+    wcs = build_wcs_profile(pixsize)
+
+    profile = hp_to_profile(hp_hdu, wcs, coord, shape_out=shape_out)
+
+    r_in = wcs.wcs_pix2world(np.arange(shape_out) - 0.5, 0)[0]
+    r_out = wcs.wcs_pix2world(np.arange(shape_out) + 0.5, 0)[0]
+
+    # Pixel integrated gaussian
+    gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
+    npt.assert_allclose(profile, gauss_pix, rtol=3e-2)
+
+
+def test_hp_to_wcs_exception(uniform_hp_hdu):
+
+    hp_hdu = uniform_hp_hdu
 
     coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 1, [512, 512]
     wcs = build_wcs(coord, pixsize, shape_out)
@@ -79,19 +205,13 @@ def test_hp_to_wcs_exception():
         sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=2)
 
 
-def test_hp_to_wcs():
+def test_hp_to_wcs(uniform_hp_hdu):
     # hp_to_wcs(hp_map, hp_header, wcs, shape_out=DEFAULT_shape_out,
     # npix=None, order=0):
+    hp_hdu = uniform_hp_hdu
 
-    nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside))
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
-    hp_hdu = fits.ImageHDU(hp_map, fits.Header(hp_header))
-
-    coord, pixsize, shape_out = SkyCoord(
-        0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), [512, 512]
+    nside = hp_hdu.header['NSIDE']
+    coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), [512, 512]
     wcs = build_wcs(coord, pixsize, shape_out)
 
     # Test order = 0
@@ -112,8 +232,8 @@ def test_hp_to_wcs():
 
     lon, lat = coord.ra.deg, coord.dec.deg
     phi, theta = np.radians(lon), np.radians(90 - lat)
-    ipix = hp.ang2pix(nside, theta, phi, nest=hp_is_nest(hp_header))
-    hp_map[ipix] = 0
+    ipix = hp.ang2pix(nside, theta, phi, nest=hp_is_nest(hp_hdu.header))
+    hp_hdu.data[ipix] = 0
     sub_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=0)
     i_x, i_y = wcs.all_world2pix(lon, lat, 0)
     assert sub_map[int(np.floor(i_y + 0.5)), int(np.floor(i_x + 0.5))] == 0
@@ -126,12 +246,11 @@ def test_hp_to_wcs():
     assert sub_map[int(np.floor(i_y + 0.5)), int(np.floor(i_x + 0.5))] == 0
 
 
-def test_hp_to_wcs_ipx():
+def test_hp_to_wcs_ipx(uniform_hp_hdu):
 
-    nside = 2**6
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
+    hp_hdu = uniform_hp_hdu
+    hp_header = hp_hdu.header
+    nside = hp_header['NSIDE']
 
     coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 0.1, [1, 1]
     wcs = build_wcs(coord, pixsize, shape_out)
@@ -153,48 +272,36 @@ def test_hp_to_wcs_ipx():
     npt.assert_array_equal(sub_ipx, ipix)
 
 
-def test_hp_project():
-    nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside))
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
-    hp_hdu = fits.ImageHDU(hp_map, fits.Header(hp_header))
+def test_hp_project(uniform_hp_hdu):
+    hp_hdu = uniform_hp_hdu
 
-    coord, pixsize, npix = SkyCoord(
-        0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
+    coord, pixsize, npix = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])), 512
 
     # Test HDU
     sub_map = hp_project(hp_hdu, coord, pixsize, npix)
-    assert type(sub_map) is fits.hdu.image.PrimaryHDU
+    assert isinstance(sub_map, fits.hdu.image.ImageHDU)
     assert sub_map.data.shape == (npix, npix)
 
 
-def test_hpmap_decorator():
-    nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside))
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
+def test_hpmap_decorator(uniform_hp_hdu):
+    hp_hdu = uniform_hp_hdu
+    hp_header = hp_hdu.header
+    nside = hp_header['NSIDE']
 
     coord, pixsize, npix = SkyCoord(
         0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
 
     # Test HDU
-    sub_map = hp_project(hp_map, hp_header, coord, pixsize, npix)
-    assert type(sub_map) is fits.hdu.image.PrimaryHDU
+    sub_map = hp_project(hp_hdu.data, hp_header, coord, pixsize, npix)
+    assert type(sub_map) is fits.hdu.image.ImageHDU
     assert sub_map.data.shape == (npix, npix)
 
 
-def test_gen_hpmap():
+def test_gen_hpmap(uniform_hp_hdu):
 
-    nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside))
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
-
-    maps = [('map' + str(i), hp_map * i, hp_header) for i in range(3)]
+    hp_hdu = uniform_hp_hdu
+    hp_map = np.ones(hp.nside2npix(hp_hdu.header['NSIDE']))
+    maps = [('map' + str(i), hp_map * i, hp_hdu.header) for i in range(3)]
 
     for i, (name, hp_hdu) in enumerate(gen_hpmap(maps)):
         assert name == 'map' + str(i)
