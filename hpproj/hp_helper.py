@@ -314,7 +314,7 @@ def hp_to_wcs_ipx(hp_header, wcs, shape_out=DEFAULT_SHAPE_OUT):
 
 
 @_hpmap
-def hp_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('GALACTIC', 'TAN')):
+def hp_project(hp_hdu, coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0, projection=('GALACTIC', 'TAN')):
     """Project an healpix map at a single given position
 
     Parameters
@@ -325,8 +325,8 @@ def hp_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('GALA
         the sky coordinate of the center of the projection
     pixsize : float
         size of the pixel (in degree)
-    npix : int
-        number of pixels in the final map, the reference pixel will be at the center
+    shape_out : tuple
+        shape of the output map (n_y, n_x)
     order : int (0|1)
         order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
     projection : tuple of str
@@ -342,8 +342,8 @@ def hp_project(hp_hdu, coord, pixsize=0.01, npix=512, order=0, projection=('GALA
 
     proj_sys, proj_type = projection
 
-    wcs = build_wcs(coord, pixsize, shape_out=(npix, npix), proj_sys=proj_sys, proj_type=proj_type)
-    proj_map = hp_to_wcs(hp_hdu, wcs, shape_out=(npix, npix), order=order)
+    wcs = build_wcs(coord, pixsize, shape_out=shape_out, proj_sys=proj_sys, proj_type=proj_type)
+    proj_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=order)
 
     return fits.ImageHDU(proj_map, wcs.to_header(relax=0x20000))
 

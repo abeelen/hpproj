@@ -4,6 +4,7 @@ master
 Added
 -----
 * Profile routine
+* hp_project use shape_out instead of npix
 
 Fixed
 -----
