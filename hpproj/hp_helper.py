@@ -9,6 +9,8 @@
 
 from __future__ import print_function, division
 
+from itertools import repeat
+
 import logging
 import numpy as np
 import healpy as hp
@@ -18,7 +20,8 @@ from astropy.wcs import WCS, utils as wcs_utils
 from astropy.coordinates import SkyCoord, UnitSphericalRepresentation
 from astropy import units as u
 
-from .wcs_helper import equiv_celestial, build_wcs, build_wcs_profile, get_lonlat
+from .wcs_helper import equiv_celestial, build_wcs, get_lonlat
+from .wcs_helper import build_wcs_profile, build_wcs_cube
 from .wcs_helper import DEFAULT_SHAPE_OUT
 
 from .decorator import _hpmap
@@ -27,7 +30,7 @@ logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=lo
 
 __all__ = ['hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_to_wcs_ipx',
            'hp_project', 'gen_hpmap', 'build_hpmap', 'hpmap_key',
-           'wcs_to_profile', 'hp_to_profile', 'hp_profile']
+           'wcs_to_profile', 'hp_to_profile', 'hp_profile', 'hp_stack']
 
 
 def hp_celestial(hp_header):
@@ -192,7 +195,7 @@ def hp_to_profile(hp_hdu, wcs, coord, shape_out=DEFAULT_SHAPE_OUT[0], std=False)
     # radius
     a_pix = []
     for in_pix, out_pix in zip(i_pix[:-1], i_pix[1:]):
-        a_pix.append(out_pix[~np.isin(out_pix, in_pix)])
+        a_pix.append(np.setxor1d(in_pix, out_pix))
 
     profile = np.asarray([np.mean(hp_hdu.data[pix]) for pix in a_pix])
     if not std:
@@ -346,6 +349,50 @@ def hp_project(hp_hdu, coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0
     proj_map = hp_to_wcs(hp_hdu, wcs, shape_out=shape_out, order=order)
 
     return fits.ImageHDU(proj_map, wcs.to_header(relax=0x20000))
+
+
+@_hpmap
+def hp_stack(hp_hdu, coords, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0, projection=('GALACTIC', 'TAN'), keep=False):
+
+    proj_sys, proj_type = projection
+
+    lons, lats = get_lonlat(coords, proj_sys)
+
+    fake_ref = SkyCoord(0, 0, frame=coords[0].frame.name, unit="deg")
+
+    if isinstance(pixsize, (int, float)):
+        ref_pixsize = pixsize
+        pixsize = repeat(pixsize, len(coords))
+    else:
+        ref_pixsize = pixsize[0]
+
+    w = build_wcs_cube(fake_ref, 0, pixsize=ref_pixsize, shape_out=shape_out,
+                       proj_sys=proj_sys, proj_type=proj_type)
+
+    _w = w.dropaxis(2)
+
+    stacks = np.ma.zeros(shape_out)
+    if keep:
+        # return 3D array
+        stacks = np.ma.resize(stacks, (len(coords),) + stacks.shape)
+
+    for index, (lon, lat, pix) in enumerate(zip(lons, lats, pixsize)):
+
+        _w.wcs.crval[0] = lon
+        _w.wcs.crval[1] = lat
+        _w.wcs.cdelt = [-pix, pix]
+
+        if keep:
+            stacks[index, :, :] = hp_to_wcs(hp_hdu, _w, shape_out)
+        else:
+            stacks += hp_to_wcs(hp_hdu, _w, shape_out)
+
+    # Take the mean
+    if not keep:
+        stacks /= len(coords)
+        w.dropaxis(2)
+
+    return fits.ImageHDU(stacks, w.to_header(relax=0x20000))
 
 
 @_hpmap

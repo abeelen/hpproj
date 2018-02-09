@@ -12,6 +12,7 @@ from hpproj import hp_to_wcs, hp_to_wcs_ipx
 from hpproj import hp_project, gen_hpmap, hpmap_key
 from hpproj import hp_to_profile, hp_profile
 from hpproj import wcs_to_profile
+from hpproj import hp_stack
 
 from hpproj import build_wcs, build_wcs_profile
 
@@ -20,8 +21,9 @@ from numpy import testing as npt
 import healpy as hp
 from astropy.coordinates import ICRS, Galactic, SkyCoord
 from astropy.io import fits
+# from astropy.modeling import models, fitting # This make an optionnal dependancy on scipy...
 from astropy import units as u
-from scipy.special import erf
+# from scipy.special import erf
 
 
 class TestHPCelestical:
@@ -103,23 +105,67 @@ def gaussian_hp_hdu():
 def gaussians_hp_hdu():
     np.random.seed(0)
 
-    nside = 2**6
-    n_gaussian = 100
-    sigma = 2 * np.degrees(hp.nside2resol(nside))
+    nside = 2**8
+    n_gaussian = 10
+    sigma = 3 * np.degrees(hp.nside2resol(nside))
 
     hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
     hp_header = {'NSIDE': nside,
                  'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
+                 'COORDSYS': 'G'}
 
-    coords = SkyCoord(np.random.uniform(0, 360, n_gaussian), np.degrees(np.arcsin(np.random.uniform(-1, 1, n_gaussian))), unit="deg")
+    i_pix = np.random.uniform(0, hp.nside2npix(nside), n_gaussian).astype(int)
+    lon, lat = hp.pix2ang(nside, i_pix, nest=False, lonlat=True)
+    coords = SkyCoord(lon, lat, unit="deg", frame="galactic")
+
+#    coords = SkyCoord(np.random.uniform(0, 360, n_gaussian), np.degrees(np.arcsin(np.random.uniform(-1, 1, n_gaussian))), unit="deg")
     for coord in coords:
-        i_pix = hp.query_disc(nside, hp.dir2vec(coord.ra.deg, coord.dec.deg, lonlat=True), 20 * sigma, nest=False)
+        i_pix = hp.query_disc(nside, hp.dir2vec(coord.l.deg, coord.b.deg, lonlat=True), 20 * sigma, nest=False)
         lon_arr, lat_arr = hp.pix2ang(nside, i_pix, lonlat=True, nest=False)
-        dist = SkyCoord(lon_arr, lat_arr, unit="deg").separation(coord).to(u.deg).value
+        dist = SkyCoord(lon_arr, lat_arr, unit="deg", frame="galactic").separation(coord).to(u.deg).value
         hp_map[i_pix] += np.exp(-dist**2 / (2 * sigma**2))
 
     return sigma, coords, fits.ImageHDU(hp_map, fits.Header(hp_header))
+
+
+def test_hp_stack(gaussians_hp_hdu):
+
+    sigma, coords, hp_hdu = gaussians_hp_hdu
+    shape_out = (129, 129)
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    hdu = hp_stack(hp_hdu, coords, pixsize=pixsize, shape_out=shape_out)
+
+    assert isinstance(hdu, fits.ImageHDU)
+    assert hdu.data.shape == shape_out
+    assert np.abs(hdu.header['CDELT1']) == pixsize
+
+    npt.assert_allclose(hdu.data.max(), 1, rtol=1e-4)
+
+    pixsize = np.abs(hdu.header['CDELT1'])
+    sigma_pix = sigma / pixsize
+
+    def CircularGaussian2D(x, y, amplitude, x_mean, y_mean, sigma):
+        denom = 2 * sigma**2
+        return amplitude * np.exp(- ((x - x_mean)**2 + (y - y_mean)**2) / denom)
+
+    y, x = np.indices(hdu.shape, dtype=np.float)
+    model = CircularGaussian2D(x, y, amplitude=1, x_mean=(hdu.shape[1] - 1) / 2, y_mean=(hdu.shape[0] - 1) / 2, sigma = sigma_pix)
+
+    # Due to strong pixelization....
+    npt.assert_allclose(hdu.data,model, atol=1e-1, rtol=1e-2)
+
+    # This would imply a requirement on scipy...
+    # g = models.Gaussian2D(x_mean=hdu.shape[1] / 2, y_mean=hdu.shape[0] / 2, x_stddev=sigma / pixsize)
+    # g.theta.fixed = True
+    # g.x_stddev.fixed = True
+    # g.y_stddev.tied = lambda g: g.x_stddev
+
+    # fit_g = fitting.LevMarLSQFitter()
+    # p = fit_g(g, x, y, hdu.data)
+
+    # npt.assert_allclose(p.amplitude, 1, rtol=1e-2)
+    # npt.assert_allclose(p.x_mean, (hdu.shape[1] - 1) / 2, rtol=1e-4)
+    # npt.assert_allclose(p.y_mean, (hdu.shape[0] - 1) / 2, rtol=1e-4)
 
 
 def test_wcs_to_profile():
@@ -139,7 +185,7 @@ def test_wcs_to_profile():
     r_out = wcs.wcs_pix2world(np.arange(shape_out) + 0.5, 0)[0]
 
     # Pixel integrated gaussian
-    gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
+    # gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
     # npt.assert_allclose(profile, gauss_pix, rtol=3e-2)
     pass
 
@@ -189,7 +235,9 @@ def test_hp_profile_gaussian(gaussian_hp_hdu):
     r_out = wcs.wcs_pix2world(np.arange(shape_out) + 0.5, 0)[0]
 
     # Pixel integrated gaussian
-    gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
+    # gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
+    r_mid = (r_in + r_out)/2
+    gauss_pix = np.exp(-(r_mid**2 / (2 * sigma**2)))
     npt.assert_allclose(profile, gauss_pix, rtol=3e-2)
 
 
@@ -278,7 +326,7 @@ def test_hp_project(uniform_hp_hdu):
     coord, pixsize, npix = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])), 512
 
     # Test HDU
-    sub_map = hp_project(hp_hdu, coord, pixsize, npix)
+    sub_map = hp_project(hp_hdu, coord, pixsize, (npix, npix))
     assert isinstance(sub_map, fits.hdu.image.ImageHDU)
     assert sub_map.data.shape == (npix, npix)
 
@@ -292,7 +340,7 @@ def test_hpmap_decorator(uniform_hp_hdu):
         0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
 
     # Test HDU
-    sub_map = hp_project(hp_hdu.data, hp_header, coord, pixsize, npix)
+    sub_map = hp_project(hp_hdu.data, hp_header, coord, pixsize, (npix, npix))
     assert type(sub_map) is fits.hdu.image.ImageHDU
     assert sub_map.data.shape == (npix, npix)
 

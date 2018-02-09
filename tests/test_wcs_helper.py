@@ -83,6 +83,10 @@ class TestBuildWCS:
                 build_wcs(SkyCoord(0, 0, unit='deg'),
                           proj_sys=proj_sys, proj_type=proj_type)
 
+        with pytest.raises(AssertionError):
+            build_wcs(SkyCoord(0, 0, unit='deg'), shape_out=100)
+            build_wcs(SkyCoord(0, 0, unit='deg'), shape_out=(100, 100, 100))
+
     def test_build_wcs(self):
 
         # TODO: Parametrize

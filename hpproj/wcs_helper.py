@@ -212,6 +212,9 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATO
         An corresponding wcs object
     """
 
+    assert isinstance(shape_out, (tuple, list, np.ndarray))
+    assert len(shape_out) == 2
+
     lon, lat = get_lonlat(coord, proj_sys)
 
     proj_type = proj_type.upper()
