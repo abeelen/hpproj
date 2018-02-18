@@ -17,10 +17,11 @@ import healpy as hp
 
 from astropy.io import fits
 from astropy.wcs import WCS, utils as wcs_utils
+from astropy.table import Table, Column
 from astropy.coordinates import SkyCoord, UnitSphericalRepresentation
 from astropy import units as u
 
-from .wcs_helper import equiv_celestial, build_wcs, get_lonlat
+from .wcs_helper import equiv_celestial, build_wcs, rot_frame
 from .wcs_helper import build_wcs_profile, build_wcs_cube
 from .wcs_helper import DEFAULT_SHAPE_OUT
 
@@ -30,7 +31,8 @@ logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=lo
 
 __all__ = ['hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_to_wcs_ipx',
            'hp_project', 'gen_hpmap', 'build_hpmap', 'hpmap_key',
-           'wcs_to_profile', 'hp_to_profile', 'hp_profile', 'hp_stack']
+           'wcs_to_profile', 'hp_to_profile', 'hp_profile', 'hp_stack',
+           'hp_to_aperture', 'hp_photometry']
 
 
 def hp_celestial(hp_header):
@@ -181,13 +183,13 @@ def hp_to_profile(hp_hdu, wcs, coord, shape_out=DEFAULT_SHAPE_OUT[0], std=False)
         optionnaly a second ImageHDU containing the standard deviation
     """
 
-    lon, lat = get_lonlat(coord, hp_hdu.header['COORDSYS'])
+    coord = rot_frame(coord, hp_hdu.header['COORDSYS'])
 
     r_edge = wcs.all_pix2world(np.arange(shape_out + 1) - 0.5, 0)[0]
 
     nside = hp_hdu.header['NSIDE']
     nest = hp_is_nest(hp_hdu.header)
-    vec = hp.rotator.dir2vec(lon, lat, lonlat=True)
+    vec = hp.rotator.dir2vec(coord.data.lon.deg, coord.data.lat.deg, lonlat=True)
 
     i_pix = [hp.query_disc(nside, vec, np.radians(radius), nest=nest, inclusive=False) for radius in r_edge]
 
@@ -334,8 +336,6 @@ def hp_project(hp_hdu, coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0
         order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
     projection : tuple of str
         the coordinate ('GALACTIC', 'EQUATORIAL') and projection ('TAN', 'SIN', 'GSL', ...) system
-    hdu : bool
-        return a :class:`astropy.io.fits.PrimaryHDU` instead of just a ndarray
 
     Returns
     -------
@@ -353,33 +353,58 @@ def hp_project(hp_hdu, coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0
 
 @_hpmap
 def hp_stack(hp_hdu, coords, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0, projection=('GALACTIC', 'TAN'), keep=False):
+    """Perform stacking on an healpix map
 
+    Parameters
+    ----------
+    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+        a pseudo ImageHDU with the healpix map and the associated header to be projected
+    coords : list of :class:`astropy.coordinate.SkyCoord`
+        list of sky coordinates for the center of the cropped maps
+    pixsize : float
+        size of the pixel (in degree)
+    shape_out : tuple
+        shape of the output map (n_y, n_x)
+    order : int (0|1)
+        order of the interpolation 0: nearest-neighbor, 1: bi-linear interpolation
+    projection : tuple of str
+        the coordinate ('GALACTIC', 'EQUATORIAL') and projection ('TAN', 'SIN', 'GSL', ...) system
+    keep : boolean (default False)
+        return all the cropped maps as a 3D cube instead of one stack map
+
+    Returns
+    -------
+    `:class:~fits.ImageHDU`
+        hdu containing the stack image or cube and corresponding header
+    """
+
+    # TODO: Check if we can merge hp_project and hp_stack without a loss of time
+    #       Probably must initiate the first image / wcs and proceed if one need a list
     proj_sys, proj_type = projection
 
-    lons, lats = get_lonlat(coords, proj_sys)
+    if coords.isscalar:
+        coords = SkyCoord([coords])
 
-    fake_ref = SkyCoord(0, 0, frame=coords[0].frame.name, unit="deg")
+    coords = rot_frame(coords, proj_sys)
 
     if isinstance(pixsize, (int, float)):
-        ref_pixsize = pixsize
-        pixsize = repeat(pixsize, len(coords))
+        pixsize = repeat(pixsize, coords.shape[0])
     else:
-        ref_pixsize = pixsize[0]
+        pixsize = iter(pixsize)
 
-    w = build_wcs_cube(fake_ref, 0, pixsize=ref_pixsize, shape_out=shape_out,
+    w = build_wcs_cube(coords[0], 0, pixsize=next(pixsize), shape_out=shape_out,
                        proj_sys=proj_sys, proj_type=proj_type)
 
+    # First image outside of the loop
     _w = w.dropaxis(2)
+    stacks = hp_to_wcs(hp_hdu, _w, shape_out)
 
-    stacks = np.ma.zeros(shape_out)
     if keep:
         # return 3D array
-        stacks = np.ma.resize(stacks, (len(coords),) + stacks.shape)
+        stacks = np.ma.resize(stacks, coords.shape + stacks.shape)
 
-    for index, (lon, lat, pix) in enumerate(zip(lons, lats, pixsize)):
-
-        _w.wcs.crval[0] = lon
-        _w.wcs.crval[1] = lat
+    for index, (coord, pix) in enumerate(zip(coords[1:], pixsize), 1):
+        _w.wcs.crval = (coord.data.lon.deg, coord.data.lat.deg)
         _w.wcs.cdelt = [-pix, pix]
 
         if keep:
@@ -389,8 +414,11 @@ def hp_stack(hp_hdu, coords, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0,
 
     # Take the mean
     if not keep:
-        stacks /= len(coords)
-        w.dropaxis(2)
+        stacks /= coords.shape[0]
+        w = w.dropaxis(2)
+        
+    if coords.shape[0] > 1:
+        w.wcs.crval[0:2] = [0, 0]
 
     return fits.ImageHDU(stacks, w.to_header(relax=0x20000))
 
@@ -420,6 +448,84 @@ def hp_profile(hp_hdu, coord, pixsize=0.01, npix=512):
     profile = hp_to_profile(hp_hdu, wcs, coord, shape_out=npix, std=False)
 
     return fits.ImageHDU(profile, wcs.to_header(relax=0x20000))
+
+
+@_hpmap
+def hp_to_aperture(hp_hdu, coord, apertures=None):
+    """Raw aperture summation on an healpix map
+
+    Parameters
+    ----------
+    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+        a pseudo ImageHDU with the healpix map and the associated header to be projected
+    coords : list of :class:`astropy.coordinate.SkyCoord`
+        the sky coordinates for the center of the apertures
+    apertures : list of `:class:astropy.coordinates.Angles`
+        aperture angle in which we perfom summation
+
+    Returns
+    -------
+    list of (int, float)
+        number of pixels, and sum of the pixels within the aperture
+    """
+
+    coord = rot_frame(coord, hp_hdu.header['COORDSYS'])
+
+    nside = hp_hdu.header['NSIDE']
+    nest = hp_is_nest(hp_hdu.header)
+
+    vec = hp.rotator.dir2vec(coord.data.lon.deg, coord.data.lat.deg, lonlat=True)
+
+    if coord.isscalar:
+        vec = vec[:, np.newaxis]
+
+    pix_indexes = [hp.query_disc(nside, vec, np.radians(radius.degree), nest=nest, inclusive=False)
+                   for radius in apertures]
+
+
+    # TODO: have a look at regions.PixelRegion for exact boundings
+    # apertures = [(len(index), np.sum(hp_hdu.data[index])) if len(index) > 0 else None for index in pix_indexes]
+    apertures = [(len(index), np.sum(hp_hdu.data[index])) for index in pix_indexes]
+
+    return apertures
+
+
+@_hpmap
+def hp_photometry(hp_hdu, coords, apertures=None):
+    """Aperture photometry on an healpix map at a single given position
+
+    Parameters
+    ----------
+    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+        a pseudo ImageHDU with the healpix map and the associated header to be projected
+    coords : list of :class:`astropy.coordinate.SkyCoord`
+        the sky coordinates for the center of the apertures
+    apertures : 3 `:class:astropy.coordinates.Angles`
+        3 floats defining the aperture radius and inner/outer annulus radii
+
+    Returns
+    -------
+    :class:`astropy.io.fits.BinaryHDU`
+        table containing the photometry
+    """
+
+    if isinstance(coords, SkyCoord):
+        coords = list([coords])
+
+    apertures = hp_to_aperture(hp_hdu, coords, apertures)
+
+    R_aper, R_inner, R_outer = apertures
+
+    # Perfom photometry
+    mean_background = (R_outer[1] - R_inner[1]) / (R_outer[0] - R_inner[0])
+    mean_brigthness = R_aper[1] / R_aper[0] - mean_background
+
+    result = Table()
+    result['brigthness'] = Column(mean_brigthness, unit=hp_hdu.header['UNIT'])
+    result['background'] = Column(mean_background, unit=hp_hdu.header['UNIT'])
+    result['n_pix'] = Column(R_aper[0])
+
+    return result
 
 
 def gen_hpmap(maps):

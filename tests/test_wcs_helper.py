@@ -10,7 +10,7 @@ import pytest
 from hpproj import equiv_celestial, build_ctype
 from hpproj import build_wcs, build_wcs_cube, build_wcs_2pts
 from hpproj import build_wcs_profile
-from hpproj import get_lonlat
+from hpproj import rot_frame
 
 import numpy as np
 from numpy import testing as npt
@@ -68,8 +68,8 @@ class TestGetLonLat:
                               (SkyCoord(0, 0, unit="deg", frame="icrs"), 'galactic', (96.33728336969006, -60.188551946914465))
                               ])
     def test_getlonlat(self, SkyCoord, proj_type, lonlat):
-        result = get_lonlat(SkyCoord, proj_type)
-        npt.assert_allclose(lonlat, result)
+        result = rot_frame(SkyCoord, proj_type)
+        npt.assert_allclose(lonlat, (result.data.lon.deg, result.data.lat.deg))
 
 
 class TestBuildWCS:

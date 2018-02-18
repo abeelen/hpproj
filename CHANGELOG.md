@@ -6,6 +6,7 @@ Added
 * Profile routine
 * hp_project use shape_out instead of npix
 * Add hp_stack to perform stacking on healpix map
+* Add hp_photometry to perform aperture photometry on list of SkyCoord
 
 Fixed
 -----
