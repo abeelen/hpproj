@@ -65,7 +65,7 @@ def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', asp
     return ImageHDU(_data, _wcs.to_header())
 
 
-mollview = partial(view, proj_type='TAN', aspect=0.5)
+mollview = partial(view, proj_type='MOL', aspect=0.5)
 update_wrapper(mollview, view)
 mollview.__name__ = "mollview"
 mollview.__doc__ = "Mollweide " + mollview.__doc__
