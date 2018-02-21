@@ -156,7 +156,10 @@ def wcs_to_profile(hdu, wcs, shape_out=DEFAULT_SHAPE_OUT[0]):
     hist, bin_edges = np.histogram(dist, bins=r_edge, weights=hdu.data)
     hist_d, bin_edges_d = np.histogram(dist, bins=r_edge)
 
-    return hist / hist_d
+    with np.errstate(invalid='ignore'):
+        hist /= hist_d
+
+    return hist
 
 
 @_hpmap
