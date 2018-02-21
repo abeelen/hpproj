@@ -11,6 +11,7 @@ from hpproj import hp_celestial, hp_is_nest
 from hpproj import hp_to_wcs, hp_to_wcs_ipx
 from hpproj import hp_project, gen_hpmap, hpmap_key
 from hpproj import hp_to_profile, hp_profile
+from hpproj import hp_to_aperture, hp_photometry
 from hpproj import wcs_to_profile
 from hpproj import hp_stack
 
@@ -19,7 +20,7 @@ from hpproj import build_wcs, build_wcs_profile
 import numpy as np
 from numpy import testing as npt
 import healpy as hp
-from astropy.coordinates import ICRS, Galactic, SkyCoord
+from astropy.coordinates import ICRS, Galactic, SkyCoord, Angle
 from astropy.io import fits
 # from astropy.modeling import models, fitting # This make an optionnal dependancy on scipy...
 from astropy import units as u
@@ -112,7 +113,8 @@ def gaussians_hp_hdu():
     hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
     hp_header = {'NSIDE': nside,
                  'ORDERING': 'RING',
-                 'COORDSYS': 'G'}
+                 'COORDSYS': 'G',
+                 'UNIT': 'MJy/deg**2'}
 
     i_pix = np.random.uniform(0, hp.nside2npix(nside), n_gaussian).astype(int)
     lon, lat = hp.pix2ang(nside, i_pix, nest=False, lonlat=True)
@@ -126,6 +128,51 @@ def gaussians_hp_hdu():
         hp_map[i_pix] += np.exp(-dist**2 / (2 * sigma**2))
 
     return sigma, coords, fits.ImageHDU(hp_map, fits.Header(hp_header))
+
+
+def test_hp_stack_single(gaussians_hp_hdu):
+
+    sigma, coords, hp_hdu = gaussians_hp_hdu
+    shape_out = (129, 129)
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    hdu = hp_stack(hp_hdu, coords[0], pixsize=pixsize, shape_out=shape_out)
+
+    assert isinstance(hdu, fits.ImageHDU)
+    assert hdu.data.shape == shape_out
+    assert np.abs(hdu.header['CDELT1']) == pixsize
+
+    npt.assert_allclose(hdu.data.max(), 1, rtol=1e-4)
+
+
+def test_hp_stack_keep(gaussians_hp_hdu):
+
+    sigma, coords, hp_hdu = gaussians_hp_hdu
+    shape_out = (129, 129)
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    hdu = hp_stack(hp_hdu, coords, pixsize=pixsize, shape_out=shape_out, keep=True)
+
+    assert isinstance(hdu, fits.ImageHDU)
+    assert hdu.data.shape == coords.shape + shape_out
+    assert np.abs(hdu.header['CDELT1']) == pixsize
+
+    npt.assert_allclose(hdu.data.max(axis=(1, 2)), 1, rtol=1e-4)
+
+
+def test_hp_stack_pixsize(gaussians_hp_hdu):
+
+    sigma, coords, hp_hdu = gaussians_hp_hdu
+    shape_out = (129, 129)
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    pixsize = [pixsize] * coords.shape[0]
+    hdu = hp_stack(hp_hdu, coords, pixsize=pixsize, shape_out=shape_out, keep=True)
+
+    assert isinstance(hdu, fits.ImageHDU)
+    assert hdu.data.shape == coords.shape + shape_out
+    assert np.abs(hdu.header['CDELT1']) == pixsize[0]
+
+    npt.assert_allclose(hdu.data.max(axis=(1, 2)), 1, rtol=1e-4)
+
+    # TODO: Probably shall use a gaussians_pixsize fixture to properly check for that.
 
 
 def test_hp_stack(gaussians_hp_hdu):
@@ -149,10 +196,10 @@ def test_hp_stack(gaussians_hp_hdu):
         return amplitude * np.exp(- ((x - x_mean)**2 + (y - y_mean)**2) / denom)
 
     y, x = np.indices(hdu.shape, dtype=np.float)
-    model = CircularGaussian2D(x, y, amplitude=1, x_mean=(hdu.shape[1] - 1) / 2, y_mean=(hdu.shape[0] - 1) / 2, sigma = sigma_pix)
+    model = CircularGaussian2D(x, y, amplitude=1, x_mean=(hdu.shape[1] - 1) / 2, y_mean=(hdu.shape[0] - 1) / 2, sigma=sigma_pix)
 
     # Due to strong pixelization....
-    npt.assert_allclose(hdu.data,model, atol=1e-1, rtol=1e-2)
+    npt.assert_allclose(hdu.data, model, atol=1e-1, rtol=1e-2)
 
     # This would imply a requirement on scipy...
     # g = models.Gaussian2D(x_mean=hdu.shape[1] / 2, y_mean=hdu.shape[0] / 2, x_stddev=sigma / pixsize)
@@ -184,6 +231,7 @@ def test_wcs_to_profile():
     r_in = wcs.wcs_pix2world(np.arange(shape_out) - 0.5, 0)[0]
     r_out = wcs.wcs_pix2world(np.arange(shape_out) + 0.5, 0)[0]
 
+    # TODO :
     # Pixel integrated gaussian
     # gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
     # npt.assert_allclose(profile, gauss_pix, rtol=3e-2)
@@ -236,7 +284,7 @@ def test_hp_profile_gaussian(gaussian_hp_hdu):
 
     # Pixel integrated gaussian
     # gauss_pix = sigma * np.sqrt(2 * np.pi) / (2 * (r_out - r_in)) * (erf(r_out / (np.sqrt(2) * sigma)) - erf(r_in / (np.sqrt(2) * sigma)))
-    r_mid = (r_in + r_out)/2
+    r_mid = (r_in + r_out) / 2
     gauss_pix = np.exp(-(r_mid**2 / (2 * sigma**2)))
     npt.assert_allclose(profile, gauss_pix, rtol=3e-2)
 
@@ -398,3 +446,47 @@ def test_hpmap_key():
 #     for i,key in enumerate(hp_keys[1:]):
 #         assert len(grouped_maps[key]) == 1
 #         assert grouped_maps[key][0] == maps[i+1]
+
+
+def test_hp_to_aperture(gaussian_hp_hdu):
+
+    sigma, coord, hp_hdu = gaussian_hp_hdu
+    apertures = [Angle(5 * sigma, unit="deg")]
+
+    npix, aper = hp_to_aperture(hp_hdu, coord, apertures)
+    assert npix.shape == (1, )
+    assert aper.shape == npix.shape
+
+    # Check for total area
+    pix_surf = (np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) * u.degree)**2
+    area = aper * pix_surf
+    npt.assert_allclose(area.value, 2 * np.pi * sigma**2, rtol=3e-3)
+
+    # Multiple coords
+    coords = SkyCoord([0, 10], [0, 10], unit="deg", frame="galactic")
+    npix, aper = hp_to_aperture(hp_hdu, coords, apertures)
+    assert npix.shape == coords.shape + (len(apertures), )
+    assert aper.shape == npix.shape
+
+    npt.assert_allclose(aper, 0, atol=1e-51)
+
+    # Several apertures
+    apertures = Angle(sigma, unit="deg") * np.arange(1, 20)
+    npix, aper = hp_to_aperture(hp_hdu, coord, apertures)
+    assert npix.shape == (len(apertures), )
+    assert aper.shape == npix.shape
+
+
+def test_hp_photometry(gaussians_hp_hdu):
+
+    sigma, coords, hp_hdu = gaussians_hp_hdu
+
+    # outer radius choosen as to avoid a close source
+    apertures = Angle(sigma, "deg") * [6, 15, 18]
+    result = hp_photometry(hp_hdu, coords, apertures)
+
+    pix_surf = (np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) * u.degree)**2
+    area = result['brigthness'] * result['n_pix'] * pix_surf
+
+    # High tolerance as some of the sources are "blended"
+    npt.assert_allclose(area.value, 2 * np.pi * sigma**2, rtol=1e-3)

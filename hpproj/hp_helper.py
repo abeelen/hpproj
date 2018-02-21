@@ -9,7 +9,7 @@
 
 from __future__ import print_function, division
 
-from itertools import repeat
+from itertools import repeat, product
 
 import logging
 import numpy as np
@@ -378,8 +378,6 @@ def hp_stack(hp_hdu, coords, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0,
         hdu containing the stack image or cube and corresponding header
     """
 
-    # TODO: Check if we can merge hp_project and hp_stack without a loss of time
-    #       Probably must initiate the first image / wcs and proceed if one need a list
     proj_sys, proj_type = projection
 
     if coords.isscalar:
@@ -416,7 +414,7 @@ def hp_stack(hp_hdu, coords, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0,
     if not keep:
         stacks /= coords.shape[0]
         w = w.dropaxis(2)
-        
+
     if coords.shape[0] > 1:
         w.wcs.crval[0:2] = [0, 0]
 
@@ -451,7 +449,7 @@ def hp_profile(hp_hdu, coord, pixsize=0.01, npix=512):
 
 
 @_hpmap
-def hp_to_aperture(hp_hdu, coord, apertures=None):
+def hp_to_aperture(hp_hdu, coords, apertures=None):
     """Raw aperture summation on an healpix map
 
     Parameters
@@ -465,40 +463,40 @@ def hp_to_aperture(hp_hdu, coord, apertures=None):
 
     Returns
     -------
-    list of (int, float)
-        number of pixels, and sum of the pixels within the aperture
+    npix, apertures : array_like
+        2 arrays containing the number of pixels, and sum of the pixels
+        within the aperture respectively
     """
 
-    coord = rot_frame(coord, hp_hdu.header['COORDSYS'])
+    coords = rot_frame(coords, hp_hdu.header['COORDSYS'])
 
     nside = hp_hdu.header['NSIDE']
     nest = hp_is_nest(hp_hdu.header)
 
-    vec = hp.rotator.dir2vec(coord.data.lon.deg, coord.data.lat.deg, lonlat=True)
+    vecs = hp.rotator.dir2vec(coords.data.lon.deg, coords.data.lat.deg, lonlat=True)
 
-    if coord.isscalar:
-        vec = vec[:, np.newaxis]
+    if coords.isscalar or coords.shape == (1,):
+        vecs = vecs[:, np.newaxis]
 
     pix_indexes = [hp.query_disc(nside, vec, np.radians(radius.degree), nest=nest, inclusive=False)
-                   for radius in apertures]
-
+                   for vec, radius in product(vecs.T, apertures)]
 
     # TODO: have a look at regions.PixelRegion for exact boundings
     # apertures = [(len(index), np.sum(hp_hdu.data[index])) if len(index) > 0 else None for index in pix_indexes]
-    apertures = [(len(index), np.sum(hp_hdu.data[index])) for index in pix_indexes]
+    npix, apertures = zip(*[(index.shape[0], np.sum(hp_hdu.data[index])) for index in pix_indexes])
 
-    return apertures
+    return np.reshape(npix, coords.shape + (-1,)), np.reshape(apertures, coords.shape + (-1,))
 
 
 @_hpmap
-def hp_photometry(hp_hdu, coords, apertures=None):
+def hp_photometry(hp_hdu, coords, apertures):
     """Aperture photometry on an healpix map at a single given position
 
     Parameters
     ----------
     hp_hdu : `:class:astropy.io.fits.ImageHDU`
         a pseudo ImageHDU with the healpix map and the associated header to be projected
-    coords : list of :class:`astropy.coordinate.SkyCoord`
+    coords : :class:`astropy.coordinate.SkyCoord`
         the sky coordinates for the center of the apertures
     apertures : 3 `:class:astropy.coordinates.Angles`
         3 floats defining the aperture radius and inner/outer annulus radii
@@ -509,21 +507,24 @@ def hp_photometry(hp_hdu, coords, apertures=None):
         table containing the photometry
     """
 
-    if isinstance(coords, SkyCoord):
-        coords = list([coords])
+    if isinstance(coords, list):
+        coords = SkyCoord(coords)
+    elif coords.isscalar:
+        coords = SkyCoord([coords])
 
-    apertures = hp_to_aperture(hp_hdu, coords, apertures)
+    npix, S = hp_to_aperture(hp_hdu, coords, apertures)
 
-    R_aper, R_inner, R_outer = apertures
+    S_aper, S_inner, S_outer = S.T
+    n_aper, n_inner, n_outer = npix.T
 
     # Perfom photometry
-    mean_background = (R_outer[1] - R_inner[1]) / (R_outer[0] - R_inner[0])
-    mean_brigthness = R_aper[1] / R_aper[0] - mean_background
+    mean_background = (S_outer - S_inner) / (n_outer - n_inner)
+    mean_brigthness = S_aper / n_aper - mean_background
 
     result = Table()
     result['brigthness'] = Column(mean_brigthness, unit=hp_hdu.header['UNIT'])
     result['background'] = Column(mean_background, unit=hp_hdu.header['UNIT'])
-    result['n_pix'] = Column(R_aper[0])
+    result['n_pix'] = Column(n_aper)
 
     return result
 
