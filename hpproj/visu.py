@@ -32,7 +32,7 @@ def view(hp_hdu, coord=None, npix=360, proj_sys='GALACTIC', proj_type='TAN', asp
 
     Parameters
     ----------
-    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+    hp_hdu : :class:`~astropy.io.fits.ImageHDU`
         a pseudo ImageHDU with the healpix map and the associated header to be projected
     coord : :class:`astropy.coordinate.SkyCoord`
         the sky coordinate of the center of the projection

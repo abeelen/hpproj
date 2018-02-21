@@ -72,9 +72,11 @@ def hp_is_nest(hp_header):
     Parameters
     ----------
     hp_header : :class:`~astropy.io.fits.header.Header`
-        the header 100
+        the header
+
+    Returns
     -------
-    bool :
+    boolean :
         True if the header is nested
     """
 
@@ -192,8 +194,11 @@ def hp_to_profile(hp_hdu, wcs, coord, shape_out=DEFAULT_SHAPE_OUT[0], std=False)
 
     nside = hp_hdu.header['NSIDE']
     nest = hp_is_nest(hp_hdu.header)
+
+    # TODO : can we have a product here...
     vec = hp.rotator.dir2vec(coord.data.lon.deg, coord.data.lat.deg, lonlat=True)
 
+    # TODO: Another possibility would be to use the outer ring, compute all distances and use np.histogram
     i_pix = [hp.query_disc(nside, vec, np.radians(radius), nest=nest, inclusive=False) for radius in r_edge]
 
     # Only keep the pixels why are only present in the outer
