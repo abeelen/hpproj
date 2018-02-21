@@ -389,7 +389,7 @@ def hp_stack(hp_hdu, coords, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, order=0,
     proj_sys, proj_type = projection
 
     if coords.isscalar:
-        coords = SkyCoord([coords])
+        coords = SkyCoord([coords.frame])
 
     coords = rot_frame(coords, proj_sys)
 
