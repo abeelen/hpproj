@@ -1,6 +1,5 @@
 numpy>=1.11
 matplotlib>=1.5
-astropy>=1.2
+astropy>=2.0
 healpy>=1.9
 photutils>=0.2
-wcsaxes>=0.9
