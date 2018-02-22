@@ -82,14 +82,15 @@ def _hpmap(hphdu_func):
 
     Parameters
     ----------
-    hp_hdu : `:class:astropy.io.fits.ImageHDU`
+    hp_hdu : :class:`astropy.io.fits.ImageHDU`
         a pseudo ImageHDU with the healpix map and the associated header
 
         or
 
     hp_map : array_like
-        healpix map with corresponding
-    hp_header : :class:`astropy.fits.header.Header`""", foot_docstring="""
+        healpix map with corresponding...
+    hp_header : :class:`astropy.fits.header.Header`
+        ...header""", foot_docstring="""
     Notes
     -----
     You can access a function using only catalogs with the ._coord() method

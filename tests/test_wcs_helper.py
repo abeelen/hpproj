@@ -9,7 +9,8 @@ import pytest
 
 from hpproj import equiv_celestial, build_ctype
 from hpproj import build_wcs, build_wcs_cube, build_wcs_2pts
-from hpproj import get_lonlat
+from hpproj import build_wcs_profile
+from hpproj import rot_frame
 
 import numpy as np
 from numpy import testing as npt
@@ -67,8 +68,8 @@ class TestGetLonLat:
                               (SkyCoord(0, 0, unit="deg", frame="icrs"), 'galactic', (96.33728336969006, -60.188551946914465))
                               ])
     def test_getlonlat(self, SkyCoord, proj_type, lonlat):
-        result = get_lonlat(SkyCoord, proj_type)
-        npt.assert_allclose(lonlat, result)
+        result = rot_frame(SkyCoord, proj_type)
+        npt.assert_allclose(lonlat, (result.data.lon.deg, result.data.lat.deg))
 
 
 class TestBuildWCS:
@@ -81,6 +82,10 @@ class TestBuildWCS:
             with pytest.raises(ValueError):
                 build_wcs(SkyCoord(0, 0, unit='deg'),
                           proj_sys=proj_sys, proj_type=proj_type)
+
+        with pytest.raises(AssertionError):
+            build_wcs(SkyCoord(0, 0, unit='deg'), shape_out=100)
+            build_wcs(SkyCoord(0, 0, unit='deg'), shape_out=(100, 100, 100))
 
     def test_build_wcs(self):
 
@@ -223,3 +228,14 @@ def test_build_wcs_2pts():
 
     wcs = build_wcs_2pts(coords, shape_out=shape_out, relative_pos=relative_pos, proj_sys='GALACTIC')
     npt.assert_array_equal(wcs.wcs.ctype, ['GLON-TAN', 'GLAT-TAN'])
+
+
+def test_build_wcs_profile():
+
+    pixsize = 0.1
+    wcs = build_wcs_profile(pixsize)
+
+    npt.assert_equal(wcs.wcs.crval, [0])
+    npt.assert_equal(wcs.wcs.crpix, [0.5])
+    npt.assert_equal(wcs.wcs.cdelt, [pixsize])
+    assert wcs.wcs.ctype[0] == "RADIUS"

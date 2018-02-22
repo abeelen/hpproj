@@ -29,7 +29,8 @@ VALID_EQUATORIAL = ['celestial2000', 'equatorial', 'eq', 'c', 'q', 'fk4', 'fk5',
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
 
 __all__ = ['build_wcs', 'build_wcs_cube', 'build_wcs_2pts',
-           'build_ctype', 'equiv_celestial', 'get_lonlat']
+           'build_ctype', 'equiv_celestial', 'rot_frame',
+           'build_wcs_profile']
 
 
 def equiv_celestial(frame):
@@ -82,7 +83,7 @@ def build_ctype(coordsys, proj_type):
     return [coord + proj_type for coord in axes]
 
 
-def get_lonlat(coord, proj_sys):
+def rot_frame(coord, proj_sys):
     """Retrieve the proper longitude and latitude
 
     Parameters
@@ -94,22 +95,20 @@ def get_lonlat(coord, proj_sys):
 
     Returns
     -------
-    tuples of float
-        the longitude and latitude in the requested system
+    :class:`~astropy.coordinate.SkyCoord`
+        rotated frame
     """
 
     proj_sys = proj_sys.lower()
 
     if proj_sys in VALID_EQUATORIAL:
         coord = coord.transform_to(ICRS)
-        lon, lat = coord.ra.deg, coord.dec.deg
     elif proj_sys in VALID_GALACTIC:
         coord = coord.transform_to(Galactic)
-        lon, lat = coord.l.deg, coord.b.deg
     else:
         raise ValueError('Unsuported coordinate system for the projection')
 
-    return lon, lat
+    return coord
 
 
 # Cyclic reference if trying to move it to decorator.py
@@ -174,6 +173,20 @@ def _lonlat(build_wcs_func):
     return decorator
 
 
+def build_wcs_profile(pixsize=0.01):
+
+    wcs = WCS(naxis=1)
+
+    # CRPIX IS in Fortran convention -> first pixel edge is 0
+    wcs.wcs.crpix = [0.5]
+    wcs.wcs.cdelt = [pixsize]
+    wcs.wcs.crval = [0]
+
+    wcs.wcs.ctype = ["RADIUS"]
+
+    return wcs
+
+
 @_lonlat
 def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATORIAL', proj_type='TAN'):
     """Construct a :class:`~astropy.wcs.WCS` object for a 2D image
@@ -197,7 +210,10 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATO
         An corresponding wcs object
     """
 
-    lon, lat = get_lonlat(coord, proj_sys)
+    assert isinstance(shape_out, (tuple, list, np.ndarray))
+    assert len(shape_out) == 2
+
+    coord = rot_frame(coord, proj_sys)
 
     proj_type = proj_type.upper()
     if proj_type not in VALID_PROJ:
@@ -208,7 +224,7 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATO
     # CRPIX IS in Fortran convention
     wcs.wcs.crpix = (np.array(shape_out, dtype=np.float) + 1) / 2
     wcs.wcs.cdelt = np.array([-pixsize, pixsize])
-    wcs.wcs.crval = [lon, lat]
+    wcs.wcs.crval = [coord.data.lon.deg, coord.data.lat.deg]
 
     wcs.wcs.ctype = build_ctype(proj_sys, proj_type)
 
@@ -240,7 +256,7 @@ def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj
         An corresponding wcs object
     """
 
-    lon, lat = get_lonlat(coord, proj_sys)
+    coord = rot_frame(coord, proj_sys)
 
     proj_type = proj_type.upper()
     if proj_type not in VALID_PROJ:
@@ -249,7 +265,7 @@ def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj
     wcs = WCS(naxis=3)
     wcs.wcs.crpix = np.append((np.array(shape_out, dtype=np.float) + 1) / 2, 1)
     wcs.wcs.cdelt = np.append(np.array([-pixsize, pixsize]), 1)
-    wcs.wcs.crval = np.array([lon, lat, index])
+    wcs.wcs.crval = np.array([coord.data.lon.deg, coord.data.lat.deg, index])
 
     wcs.wcs.ctype = np.append(build_ctype(proj_sys, proj_type), 'INDEX').tolist()
 
@@ -340,12 +356,10 @@ def build_wcs_2pts(coords, pixsize=None, shape_out=DEFAULT_SHAPE_OUT, proj_sys='
     wcs = WCS(naxis=2)
     pixsize, relative_pos = relative_pixsize(coords, pixsize, shape_out, relative_pos)
 
-    lon, lat = get_lonlat(coords[0], proj_sys)
-
     # Put the first source on the relative_pos[0]
     wcs.wcs.crpix = np.array([relative_pos[0], 1. / 2], dtype=np.float) * (
         np.array(shape_out, dtype=np.float)[::-1])
-    wcs.wcs.crval = [lon, lat]
+    wcs.wcs.crval = [coords[0].data.lon.deg, coords[0].data.lat.deg]
 
     wcs.wcs.cdelt = np.array([-pixsize, pixsize])
     # Computes the on-sky position angle (East of North) between this SkyCoord and another.

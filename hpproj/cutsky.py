@@ -42,8 +42,6 @@ from .hp_helper import hp_to_wcs_ipx, hpmap_key
 from .parse import ini_main
 from .parse import DEFAULT_NPIX, DEFAULT_PIXSIZE, DEFAULT_COORDFRAME, DEFAULT_CTYPE
 
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 try:  # pragma: py3
@@ -285,8 +283,11 @@ class CutSky(object):
 
         cuts = self._get_cuts(lonlat, coordframe, maps_selection)
 
-        # Plotting
         patch = np.zeros((self.npix, self.npix))
+
+        # Plotting
+        old_backend = plt.get_backend()
+        plt.switch_backend('Agg')
         fig = plt.figure()
 
         ax_wcs = fig.add_axes(
@@ -335,6 +336,7 @@ class CutSky(object):
             cut['png'] = b64encode(output_map.getvalue()).strip()
             LOGGER.debug(legend + ' done')
 
+        plt.switch_backend(old_backend)
         return cuts
 
     def cut_phot(self, lonlat=None, coordframe=DEFAULT_COORDFRAME, maps_selection=None):

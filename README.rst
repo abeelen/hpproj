@@ -79,8 +79,8 @@ This project is licensed under the LGPL+3.0 license.
    :alt: Format
 
 
-.. |pyversions| image:: https://img.shields.io/pypi/pyversions/hpproj.svg?maxAge=2592000
-1;5002;0c   :alt: pyversions
+.. |pyversions| image:: https://img.shields.io/pypi/pyversions/hpproj.svg?maxAge=25920001;5002;0c
+   :alt: pyversions
 
 
 .. |build-gitlabCI| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/build.svg
