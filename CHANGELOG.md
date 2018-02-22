@@ -1,6 +1,9 @@
 master
 ======
 
+Version 0.8.0
+=============
+
 Added
 -----
 * Profile routine

@@ -18,7 +18,7 @@ r"""
 HealPix Projection
 """
 
-__version__ = '0.7.4'
+__version__ = '0.8.0'
 
 from .wcs_helper import *
 from .hp_helper import *
