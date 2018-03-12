@@ -103,10 +103,11 @@ This project is licensed under the LGPL+3.0 license.
    :target: https://landscape.io/github/abeelen/hpproj/master
 
 	    
-.. |sonarqube| image:: https://sonarcloud.io//api/badges/gate?key=hpproj&metric=code_smells
+.. |sonarqube| image:: https://sonarcloud.io/api/project_badges/measure?project=hpproj&metric=alert_status
    :alt: SonarQube
    :target: https://sonarcloud.io/dashboard/index/hpproj
 
+	    
 	    
 .. |coverage| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/coverage.svg
     :alt: Master Coverage
