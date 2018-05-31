@@ -18,6 +18,9 @@ or as a python module
                                       {'filename': 'HFI_SkyMap_857_2048_R2.00_full.fits'}
                                       } )
 
+.. note::
+
+    For science applications requiring high photometric accuracy, we recommend the drizzlib software developed by CADE, which uses a flux-conserving drizzling method to reproject data between HEALPix and local WCS. Drizzlib is available as standalone software (IDL python) here: http://cade.irap.omp.eu/dokuwiki/doku.php?id=software . An online interface, drizzweb, is available here: http://drizzweb.irap.omp.eu/ .
 
 Features
 --------
@@ -102,13 +105,13 @@ This project is licensed under the LGPL+3.0 license.
    :alt: Code Health
    :target: https://landscape.io/github/abeelen/hpproj/master
 
-	    
+
 .. |sonarqube| image:: https://sonarcloud.io/api/project_badges/measure?project=hpproj&metric=alert_status
    :alt: SonarQube
    :target: https://sonarcloud.io/dashboard/index/hpproj
 
-	    
-	    
+
+
 .. |coverage| image:: https://git.ias.u-psud.fr/abeelen/hpproj/badges/master/coverage.svg
     :alt: Master Coverage
 
@@ -116,4 +119,3 @@ This project is licensed under the LGPL+3.0 license.
 .. |rtd| image:: https://readthedocs.org/projects/hpproj/badge/?version=latest
     :alt: Read the doc
     :target: http://hpproj.readthedocs.io/
-
