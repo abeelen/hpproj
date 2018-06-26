@@ -69,15 +69,14 @@ opts = dict(name="hpproj",
                     'cutsky = hpproj.cutsky:main']},
 
             setup_requires=['pytest-runner'],
-            tests_require=['pytest', 'pytest-mpl'],
+            tests_require=['pytest', 'pytest-mpl', 'scipy'],
 
             install_requires=[
                 'numpy>=1.11',
-                'matplotlib>=1.5',
+                'matplotlib>=2.0',
                 'astropy>=1.2',
                 'healpy>=1.9',
                 'photutils>=0.2',
-                'wcsaxes>=0.9'
             ],
             )
 
