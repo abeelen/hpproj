@@ -1,6 +1,13 @@
 master
 ======
 
+Version 0.8.1
+=============
+
+Fixed
+-----
+* New test matrix, now depends on astropy > 2.0 (from photutils)
+
 Version 0.8.0
 =============
 
