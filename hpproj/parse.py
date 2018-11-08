@@ -84,7 +84,7 @@ def parse_args(args):
     out.add_argument('--fits', action='store_true', help='output fits file')
     out.add_argument('--png', action='store_true',
                      help='output png file (Default: True if nothing else)')
-    out.add_argument('--votable', nargs='+', type=float, help='list of aperture to make circular aperture photometry', metavar='aperture')
+    out.add_argument('--votable', nargs='+', type=float, help='list of aperture [arcmin] to make circular aperture photometry', metavar='aperture')
     out.add_argument('--outdir', required=False,
                      help='output directory (default:".")')
 
