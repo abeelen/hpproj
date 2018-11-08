@@ -1,6 +1,12 @@
 master
 ======
 
+
+Added
+-----
+* `apertures` key in the map argument can be configured as float or list of float in arcminute
+* `--votable` option require aperture or aperture list in arcminute
+
 Version 0.8.1
 =============
 

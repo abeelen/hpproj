@@ -52,7 +52,7 @@ class TestParseArgs:
 
         assert args.fits is False
         assert args.png is False
-        assert args.votable is False
+        assert args.votable is None
 
     def test_parse_args_mapfilenames(self):
         args = parse.parse_args('0.0 0.0 --mapfilenames blah1 blah2'.split())
@@ -165,7 +165,7 @@ class TestParserConfig:
     @pytest.mark.parametrize("key, value",
                              [('fits', True),
                               ('png', True),
-                              ('votable', True),
+                              ('votable', 1),
                               ('outdir', 'toto')])
     def test_parser_output(self, generate_default_conffile, key, value):
         conffile, config = generate_default_conffile
@@ -208,15 +208,12 @@ class TestCombineArgs:
         assert logger.level == level
 
     @pytest.mark.parametrize("cmd, conf, result",
-                             [('--png', {},
-                               {'fits': False, 'png': True,
-                                'votable': False, 'outdir': '.'}),
-                              ('--png --fits --votable', {},
-                               {'fits': True, 'png': True,
-                                'votable': True, 'outdir': '.'}),
-                              ('--png --outdir toto', {'fits': True},
-                               {'fits': True, 'png': True,
-                                'votable': False, 'outdir': 'toto'}), ])
+                             [('--png', {}, {'fits': False, 'png': True, 'votable': None, 'outdir': '.'}),
+                              ('--png --fits --votable 1', {}, {'fits': True, 'png': True, 'votable': [1.0], 'outdir': '.'}),
+                              ('--png --fits --votable 1 2', {}, {'fits': True, 'png': True, 'votable': [1.0, 2.0], 'outdir': '.'}),
+                              ('--png --outdir toto', {'fits': True}, {'fits': True, 'png': True, 'votable': None, 'outdir': 'toto'}),
+                              ('', {}, {'fits': False, 'png': True, 'votable': None, 'outdir': '.'}), ]
+                             )
     def test_combine_args_config_output(self, cmd, conf, result):
         args = parse.parse_args(('0.0 0.0 ' + cmd).split())
         result_args = parse.combine_args_config(args, conf)

@@ -7,6 +7,7 @@
 
 import os
 import logging
+import json
 
 import pytest
 
@@ -172,19 +173,44 @@ def test_CutSky_cut_phot(generate_hpmap):
     hp_map[0][1]['doContour'] = True
 
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result = my_cutsky.cut_phot([0, 0])
+
+    # insure assertion when no aperture is given
+    result = my_cutsky.cut_phot([0, 0], apertures=None)
+    assert result[0]['phot'] is None
+
+    # aperture is a float
+    result = my_cutsky.cut_phot([0, 0], apertures=1)
     assert len(result) == 1
     assert result[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
     assert result[0]['fits'].header['doContour'] is True
-    assert result[0]['phot'][0]['aperture_sum'] == 0.0
+    npt.assert_almost_equal(result[0]['phot'][0]['aperture_sum'], np.pi)
 
+    # aperture is a list
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
     result2 = my_cutsky.cut_fits([0, 0])
-    result2 = my_cutsky.cut_phot([0, 0])
-    assert result[0]['legend'] == result2[0]['legend']
+    result2 = my_cutsky.cut_phot([0, 0], apertures=[1, 1])
+    assert result2[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, result2[0]['fits'].data.data)
-    assert result[0]['phot'][0][0] == result2[0]['phot'][0][0]
+    assert result2[0]['phot'][0][3] == result[0]['phot'][0][3]
+    assert result2[0]['phot'][0][4] == result[0]['phot'][0][3]
+
+    # aperture is given in hp_map
+    hp_map[0][1]['apertures'] = 1
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    result3 = my_cutsky.cut_phot([0, 0], apertures=None)
+    assert result3[0]['legend'] == opt['legend']
+    npt.assert_array_equal(result[0]['fits'].data.data, result3[0]['fits'].data.data)
+    assert result3[0]['phot'][0][3] == result[0]['phot'][0][3]
+
+    # aperture is given in hp_map as a list
+    hp_map[0][1]['apertures'] = [1, 1]
+    my_cutsky = CutSky(maps=hp_map, low_mem=True)
+    result3 = my_cutsky.cut_phot([0, 0], apertures=None)
+    assert result3[0]['legend'] == opt['legend']
+    npt.assert_array_equal(result[0]['fits'].data.data, result3[0]['fits'].data.data)
+    assert result3[0]['phot'][0][3] == result[0]['phot'][0][3]
+    assert result3[0]['phot'][0][4] == result[0]['phot'][0][3]
 
 
 class TestCutSky:
@@ -220,7 +246,7 @@ class TestCutSky:
         assert result[0]['legend'] == opt['legend']
         npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
         assert result[0]['fits'].header['doContour'] is True
-        assert result[0]['phot'][0]['aperture_sum'] == 0.0
+        assert result[0]['phot'] is None
 
         #New interface
         new_hpmap = [(filename, {'legend': opt['legend']})]
@@ -229,7 +255,7 @@ class TestCutSky:
         assert result[0]['legend'] == opt['legend']
         npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
         assert result[0]['fits'].header['doContour'] is False
-        assert result[0]['phot'][0]['aperture_sum'] == 0.0
+        assert result[0]['phot'] is None
 
     def test_cutsky_misheader(self, generate_mis_hpmap):
 
@@ -248,7 +274,7 @@ class TestCutSky:
         assert result[0]['legend'] == opt['legend']
         npt.assert_array_equal(result[0]['fits'].data.data, np.ones((DEFAULT_NPIX, DEFAULT_NPIX)))
         assert result[0]['fits'].header['doContour'] is False
-        assert result[0]['phot'][0]['aperture_sum'] == 0.0
+        assert result[0]['phot'] is None
 
     def test_main(self, generate_hpmap):
 
@@ -285,7 +311,7 @@ class TestCutSky:
         # --fits & --votable
         args = "0.0 0.0" + \
                " --mapfilenames " + filename + \
-               " --fits --votable" + \
+               " --fits --votable 1" + \
                " --outdir " + outdir
 
         exit_code = main(args.split())
@@ -297,7 +323,7 @@ class TestCutSky:
         # Test all
         args = "0.0 0.0" + \
                " --mapfilenames " + filename + \
-               " --fits --png --votable" + \
+               " --fits --png --votable 1 2" + \
                " --outdir " + outdir
 
         exit_code = main(args.split())
@@ -308,7 +334,7 @@ class TestCutSky:
         # Test clobber works
         args = "0.0 0.0" + \
                " --mapfilenames " + filename + \
-               " --fits --png --votable" + \
+               " --fits --png --votable 1" + \
                " --outdir " + outdir
 
         exit_code = main(args.split())

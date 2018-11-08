@@ -13,6 +13,7 @@ import os
 import sys
 import argparse
 import logging
+import json
 
 from .wcs_helper import VALID_PROJ
 
@@ -83,8 +84,7 @@ def parse_args(args):
     out.add_argument('--fits', action='store_true', help='output fits file')
     out.add_argument('--png', action='store_true',
                      help='output png file (Default: True if nothing else)')
-    out.add_argument(
-        '--votable', action='store_true', help='output votable file')
+    out.add_argument('--votable', nargs='+', type=float, help='list of aperture to make circular aperture photometry', metavar='aperture')
     out.add_argument('--outdir', required=False,
                      help='output directory (default:".")')
 
@@ -163,9 +163,11 @@ def parse_config_basic(config):
 def parse_config_basic_output(config, options):
     """Parse basic output options from the configuration file."""
 
-    for key in ['fits', 'png', 'votable']:
+    for key in ['fits', 'png']:
         if config.has_option('cutsky', key) and config.get('cutsky', key):
             options[key] = True
+    if config.has_option('cutsky', 'votable'):
+        options['votable'] = json.loads(config.get('cutsky', 'votable'))
 
     return options
 
@@ -285,7 +287,7 @@ def combine_args_config(args, config):
                  ('maps', None),
                  ('fits', False),
                  ('png', False),
-                 ('votable', False),
+                 ('votable', None),
                  ('outdir', '.'), ]
 
     combined_args = vars(args)
@@ -300,7 +302,7 @@ def combine_args_config(args, config):
 
     combined_args['npix'] = args.npix or config.get('npix') or DEFAULT_NPIX
 
-    if not (combined_args['fits'] or combined_args['png'] or combined_args['votable']):
+    if not (combined_args['fits'] or combined_args['png'] or (combined_args['votable'] is not None)):
         combined_args['png'] = True
 
     return combined_args

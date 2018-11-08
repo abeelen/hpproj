@@ -12,8 +12,9 @@ import logging
 
 import os
 import sys
+import json
 from base64 import b64encode
-from itertools import groupby
+from itertools import groupby, repeat
 
 try:  # pragma: py3
     from io import BytesIO
@@ -102,10 +103,13 @@ class CutSky(object):
                                               'doContour': True}), # optionnal
           ... ]
         ```
-        The {opt} dictionnary MUST containt, at least, the key
+        The {opt} dictionnary MUST contain, at least, the key
         'legend' which will be used to uniquely identify the cutted
         map, other possible keys 'doContour' with a boolean value to
-        contour the map latter one
+        contour the map latter one, 'COORDSYS' and/or 'ORDERING' to correct/update
+        the healpix map header, or 'apertures' to give a list or apertures
+        for the photometry. Any other options is serialized into the output
+        header
 
         Alternatively one can use the old interface as a dictionnary :
         ```
@@ -130,11 +134,20 @@ class CutSky(object):
         # the optionnal values
         filenames, opts = zip(*maps)
         hp_map = build_hpmap(filenames, low_mem=low_mem)
+        # TODO: Check if it would be preferable to store these options as class attributes...
         for (filename, i_map, i_header), opt in zip(hp_map, opts):
             # Insure that we do have a doContour key internally
             if 'doContour' not in opt.keys():
                 opt['doContour'] = False
-            i_header.extend(opt)
+
+            # Serialize list and strings in the dictionnary
+            for key, value in opt.items():
+                if key in ['doContour', 'legend', 'COORDSYS', 'ORDERING']:  # Reserved words
+                    i_header[key] = value
+                elif isinstance(value, (str, list)):
+                    i_header[key] = json.dumps(value)
+                else:
+                    i_header[key] = value
 
         # group them by map properties for efficiencies reasons
         hp_map.sort(key=hpmap_key)
@@ -206,7 +219,9 @@ class CutSky(object):
                 header = wcs.to_header()
                 header.append(('filename', filename))
                 header.append(('legend', legend))
-                header.append(('doContour', i_hdu.header['doContour']))
+                for extra_key in ['doContour', 'apertures']:
+                    if extra_key in i_hdu.header:
+                        header.append((extra_key, i_hdu.header[extra_key]))
 
                 cuts.append({'legend': legend,
                              'fits': fits.ImageHDU(patch, header)})
@@ -339,7 +354,7 @@ class CutSky(object):
         plt.switch_backend(old_backend)
         return cuts
 
-    def cut_phot(self, lonlat=None, coordframe=DEFAULT_COORDFRAME, maps_selection=None):
+    def cut_phot(self, lonlat=None, coordframe=DEFAULT_COORDFRAME, maps_selection=None, apertures=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding photometry
 
         Parameters
@@ -351,6 +366,8 @@ class CutSky(object):
         maps_selection : list
             optionnal list of the 'legend' or filename of the map to
             select a sub-sample of them.
+        apertures: float or list of float
+            aperture size in arcmin, if None, the aperture are guessed from the input map
 
         Returns
         -------
@@ -364,16 +381,35 @@ class CutSky(object):
 
         cuts = self._get_cuts(lonlat, coordframe, maps_selection)
 
-        positions = [(self.npix * 1. / 2., self.npix * 1. / 2)]
-        apertures = CircularAperture(positions, r=3. / self.pixsize)
+        # insure a list
+        if isinstance(apertures, (float, int)):
+            apertures = [apertures]
 
-        for cut in cuts:
+        if apertures is not None:
+            apertures = repeat(apertures, len(cuts))
+        else:
+            # find if apertures was defined in hp_map
+            apertures = []
+            for cut in cuts:
+                _apertures = cut['fits'].header.get('apertures', None)
+                if isinstance(_apertures, str):
+                    _apertures = json.loads(_apertures)
+                elif isinstance(_apertures, int):
+                    _apertures = [_apertures]
+                apertures.append(_apertures)
+
+        position = [(self.npix * 1. / 2., self.npix * 1. / 2)]
+
+        for cut, _apertures in zip(cuts, apertures):
             legend = cut['legend']
             LOGGER.debug('phot on ' + legend)
 
             patch = cut['fits'].data
-            cut['phot'] = aperture_photometry(
-                patch - np.median(patch), apertures)
+            if _apertures is not None:
+                circular_apertures = [CircularAperture(position, r=aperture / self.pixsize) for aperture in _apertures]
+                cut['phot'] = aperture_photometry(patch, circular_apertures)
+            else:
+                cut['phot'] = None
 
             LOGGER.debug(legend + ' done')
 
@@ -447,7 +483,7 @@ def to_new_maps(maps):
     return new_maps
 
 
-def cutsky(lonlat=None, maps=None, patch=None, coordframe=DEFAULT_COORDFRAME, ctype=DEFAULT_CTYPE):
+def cutsky(lonlat=None, maps=None, patch=None, coordframe=DEFAULT_COORDFRAME, ctype=DEFAULT_CTYPE, apertures=None):
     """Old interface to cutsky -- Here mostly for compability
 
     Parameters
@@ -475,6 +511,8 @@ def cutsky(lonlat=None, maps=None, patch=None, coordframe=DEFAULT_COORDFRAME, ct
         the coordinate frame used for the position AND the projection
     ctype: str
         a valid projection type (default: TAN)
+    apertures: float of list of floats
+        aperture in arcmin for the circular aperture photometry
 
     Returns
     -------
@@ -500,7 +538,7 @@ def cutsky(lonlat=None, maps=None, patch=None, coordframe=DEFAULT_COORDFRAME, ct
     cut_those_maps = CutSky(
         maps=maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
     result = cut_those_maps.cut_png(lonlat=lonlat, coordframe=coordframe)
-    result = cut_those_maps.cut_phot(lonlat=lonlat, coordframe=coordframe)
+    result = cut_those_maps.cut_phot(lonlat=lonlat, coordframe=coordframe, apertures=apertures)
 
     return result
 
@@ -542,8 +580,10 @@ def main(argv=None):
     cut_those_maps = CutSky(maps=args['maps'], npix=args['npix'], pixsize=args['pixsize'], ctype=args['ctype'])
     for key in ['fits', 'png', 'votable']:
         if args[key]:
-            results = cut_those_maps.cut(
-                key, lonlat=[args['lon'], args['lat']], coordframe=args['coordframe'])
+            if key is 'votable':
+                results = cut_those_maps.cut(key, lonlat=[args['lon'], args['lat']], coordframe=args['coordframe'], apertures=args['votable'])
+            else:
+                results = cut_those_maps.cut(key, lonlat=[args['lon'], args['lat']], coordframe=args['coordframe'])
 
     if not os.path.isdir(args['outdir']):
         os.makedirs(args['outdir'])
