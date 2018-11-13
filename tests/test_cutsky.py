@@ -189,11 +189,11 @@ def test_CutSky_cut_phot(generate_hpmap):
     # aperture is a list
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
     result2 = my_cutsky.cut_fits([0, 0])
-    result2 = my_cutsky.cut_phot([0, 0], apertures=[1, 1])
+    result2 = my_cutsky.cut_phot([0, 0], apertures=[1, 2])
     assert result2[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, result2[0]['fits'].data.data)
-    assert result2[0]['phot'][0][3] == result[0]['phot'][0][3]
-    assert result2[0]['phot'][0][4] == result[0]['phot'][0][3]
+    npt.assert_almost_equal(result2[0]['phot'][0][3], np.pi)
+    npt.assert_almost_equal(result2[0]['phot'][0][4], np.pi * 2**2)
 
     # aperture is given in hp_map
     hp_map[0][1]['apertures'] = 1
@@ -204,13 +204,13 @@ def test_CutSky_cut_phot(generate_hpmap):
     assert result3[0]['phot'][0][3] == result[0]['phot'][0][3]
 
     # aperture is given in hp_map as a list
-    hp_map[0][1]['apertures'] = [1, 1]
+    hp_map[0][1]['apertures'] = [1, 2]
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
     result3 = my_cutsky.cut_phot([0, 0], apertures=None)
     assert result3[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, result3[0]['fits'].data.data)
-    assert result3[0]['phot'][0][3] == result[0]['phot'][0][3]
-    assert result3[0]['phot'][0][4] == result[0]['phot'][0][3]
+    npt.assert_almost_equal(result3[0]['phot'][0][3], np.pi)
+    npt.assert_almost_equal(result3[0]['phot'][0][4], np.pi * 2**2)
 
 
 class TestCutSky:
