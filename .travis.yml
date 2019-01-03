@@ -19,6 +19,7 @@ env:
     - SETUP_CMD='test'
     - PIP_DEPENDENCIES='healpy photutils wcsaxes pytest-mpl'
     - CONDA_DEPENDENCIES='matplotlib pytest-cov'
+    - MATPLOTLIB_VERSION=dev
 
 matrix:
   exclude:
