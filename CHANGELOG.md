@@ -1,6 +1,9 @@
 master
 ======
 
+Version 0.9.1
+==============
+
 Added
 -----
 * `_cut_wcs` method to `CutSky`
