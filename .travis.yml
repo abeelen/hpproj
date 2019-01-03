@@ -28,7 +28,7 @@ matrix:
     env: ASTROPY_VERSION=development
   include:
   - python: 3.5
-    env: ASTROPY_VERSION=development MATPLOTLIB_VERSION=3.0.5
+    env: ASTROPY_VERSION=development CONDA_DEPENDENCIES="pytest-cov" MATPLOTLIB_VERSION=3.0.5
    
     
 addons:
