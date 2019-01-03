@@ -184,7 +184,13 @@ def test_CutSky_cut_phot(generate_hpmap):
     assert result[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
     assert result[0]['fits'].header['doContour'] is True
-    npt.assert_almost_equal(result[0]['phot'][0]['aperture_sum'], np.pi)
+
+    # Photutils is changing API with v0.6
+    aperture_result = result[0]['phot'][0]
+    if 'aperture_sum' in aperture_result:
+        npt.assert_almost_equal(aperture_result['aperture_sum'], np.pi)
+    elif 'aperture_sum_0' in aperture_result:
+        npt.assert_almost_equal(aperture_result['aperture_sum_0'], np.pi)
 
     # aperture is a list
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
