@@ -156,18 +156,15 @@ class CutSky(object):
         # Save intermediate results
         self.maps_selection = None
         self.cuts = None
-        self.lonlat = None
-        self.coordframe = DEFAULT_COORDFRAME
+        self.coord = None
 
-    def cut_fits(self, lonlat=None, coordframe=DEFAULT_COORDFRAME, maps_selection=None):
+    def cut_fits(self, coord, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header
 
         Parameters
         ----------
-        lonlat : array of 2 floats
-            the longitude and latitude of the center of projection [deg]
-        coordframe : str
-            the coordinate frame used for the position AND the projection
+        coord : :class:`~astropy.coordinates.SkyCoord`
+            the sky coordinate for the projection. Its frame will be used for the projection
         maps_selection : list
             optionnal list of the 'legend' or filename of the map to
             select a sub-sample of them.
@@ -180,17 +177,12 @@ class CutSky(object):
             * 'fits' an :class:`~astropy.io.fits.ImageHDU`
         """
 
-        assert len(lonlat) == 2, "lonlat must have 2 elements"
-
         self.maps_selection = maps_selection
 
-        # Center of projection
-        coord_in = SkyCoord(
-            lonlat[0], lonlat[1], unit=u.deg, frame=equiv_celestial(coordframe))
-
         # Build the target WCS header
-        wcs = build_wcs(coord_in, pixsize=self.pixsize / 60.,
-                        shape_out=(self.npix, self.npix), proj_sys=coordframe, proj_type=self.ctype)
+        wcs = build_wcs(coord, pixsize=self.pixsize / 60.,
+                        shape_out=(self.npix, self.npix),
+                        proj_sys=coord.frame.name, proj_type=self.ctype)
 
         cuts = []
         for group, maps in groupby(self.maps, key=hpmap_key):
@@ -225,8 +217,7 @@ class CutSky(object):
 
                 cuts.append({'legend': legend,
                              'fits': fits.ImageHDU(patch, header)})
-        self.lonlat = lonlat
-        self.coordframe = coordframe
+        self.coord = coord
         self.cuts = cuts
 
         return cuts
@@ -239,15 +230,13 @@ class CutSky(object):
             if not self.maps_selection or (legend in self.maps_selection or filename in self.maps_selection):
                 yield filename, i_hdu
 
-    def _get_cuts(self, lonlat=None, coordframe=None, maps_selection=None):
+    def _get_cuts(self, coord=None, maps_selection=None):
         """Get map cuts if they are already made, or launch cut_fits
 
         Parameters
         ----------
-        lonlat : array of 2 floats
-            the longitude and latitude of the center of projection [deg]
-        coordframe : str
-            the coordinate frame used for the position AND the projection
+        coord : :class:`~astropy.coordinates.SkyCoord`
+            the sky coordinate for the projection. Its frame will be used for the projection
         maps_selection : list
             optionnal list of the 'legend' or filename of the map to
             select a sub-sample of them.
@@ -260,28 +249,25 @@ class CutSky(object):
             * 'fits' an :class:`~astropy.io.fits.ImageHDU`
         """
 
-        if self.lonlat == lonlat and \
-           self.coordframe == coordframe and  \
+        if self.coord and  \
+           self.coord.separation(coord) == 0 and \
            self.maps_selection == maps_selection and \
            self.cuts:
             # Retrieve previously cut maps
             cuts = self.cuts
         else:
             # Or cut the maps
-            cuts = self.cut_fits(
-                lonlat=lonlat, coordframe=coordframe, maps_selection=maps_selection)
+            cuts = self.cut_fits(coord=coord, maps_selection=maps_selection)
 
         return cuts
 
-    def cut_png(self, lonlat=None, coordframe=DEFAULT_COORDFRAME, maps_selection=None):
+    def cut_png(self, coord=None, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding png
 
         Parameters
         ----------
-        lonlat : array of 2 floats
-            the longitude and latitude of the center of projection [deg]
-        coordframe : str
-            the coordinate frame used for the position AND the projection
+        coord : :class:`~astropy.coordinates.SkyCoord`
+            the sky coordinate for the projection. Its frame will be used for the projection
         maps_selection : list
             optionnal list of the 'legend' or filename of the map to
             select a sub-sample of them.
@@ -296,7 +282,7 @@ class CutSky(object):
 
         """
 
-        cuts = self._get_cuts(lonlat, coordframe, maps_selection)
+        cuts = self._get_cuts(coord, maps_selection)
 
         patch = np.zeros((self.npix, self.npix))
 
@@ -314,7 +300,7 @@ class CutSky(object):
         axes = [('glon', 'red', r'$l$'),
                 ('glat', 'red', r'$b$')]
 
-        if np.str(coordframe) in VALID_EQUATORIAL:
+        if coord.frame.name.lower() in VALID_EQUATORIAL:
             axes = [('ra', 'white', r'$\alpha_\mathrm{J2000}$'),
                     ('dec', 'white', r'$\delta_\mathrm{J2000}$')]
 
@@ -354,15 +340,13 @@ class CutSky(object):
         plt.switch_backend(old_backend)
         return cuts
 
-    def cut_phot(self, lonlat=None, coordframe=DEFAULT_COORDFRAME, maps_selection=None, apertures=None):
+    def cut_phot(self, coord=None, maps_selection=None, apertures=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header and corresponding photometry
 
         Parameters
         ----------
-        lonlat : array of 2 floats
-            the longitude and latitude of the center of projection [deg]
-        coordframe : str
-            the coordinate frame used for the position AND the projection
+        coord : :class:`~astropy.coordinates.SkyCoord`
+            the sky coordinate for the projection. Its frame will be used for the projection
         maps_selection : list
             optionnal list of the 'legend' or filename of the map to
             select a sub-sample of them.
@@ -379,7 +363,7 @@ class CutSky(object):
 
         """
 
-        cuts = self._get_cuts(lonlat, coordframe, maps_selection)
+        cuts = self._get_cuts(coord, maps_selection)
 
         # insure a list
         if isinstance(apertures, (float, int)):
@@ -422,10 +406,8 @@ class CutSky(object):
         ----------
         cut_type : str (fits|png|phot|votable)
             define what to cut_type
-        lonlat : array of 2 floats
-            the longitude and latitude of the center of projection [deg]
-        coordframe : str
-            the coordinate frame used for the position AND the projection
+        coord : :class:`~astropy.coordinates.SkyCoord`
+            the sky coordinate for the projection. Its frame will be used for the projection
         maps_selection : list
             optionnal list of the 'legend' or filename of the map to
             select a sub-sample of them.
@@ -444,6 +426,24 @@ class CutSky(object):
             results = self.cut_phot(**kwargs)
 
         return results
+
+
+def to_coord(lonlat=None, coordframe=DEFAULT_COORDFRAME):
+    """helper function to get a SkyCoord object using the old interface
+
+    Parameters
+    ----------
+    lonlat : array of 2 floats
+        the longitude and latitude of the center of projection [deg]
+    coordframe : str
+        the coordinate frame used for the position AND the projection
+
+    Returns
+    -------
+    :class:`~astropy.coordinates.SkyCoord`
+        the corresponding SkyCoord
+    """
+    return SkyCoord(lonlat[0], lonlat[1], unit=u.deg, frame=equiv_celestial(coordframe))
 
 
 def to_new_maps(maps):
@@ -537,8 +537,10 @@ def cutsky(lonlat=None, maps=None, patch=None, coordframe=DEFAULT_COORDFRAME, ct
 
     cut_those_maps = CutSky(
         maps=maps, npix=patch[0], pixsize=patch[1], ctype=ctype)
-    result = cut_those_maps.cut_png(lonlat=lonlat, coordframe=coordframe)
-    result = cut_those_maps.cut_phot(lonlat=lonlat, coordframe=coordframe, apertures=apertures)
+
+    coord = to_coord(lonlat=lonlat, coordframe=coordframe)
+    result = cut_those_maps.cut_png(coord=coord)
+    result = cut_those_maps.cut_phot(coord=coord, apertures=apertures)
 
     return result
 
@@ -578,12 +580,14 @@ def main(argv=None):
     args = ini_main(argv)
 
     cut_those_maps = CutSky(maps=args['maps'], npix=args['npix'], pixsize=args['pixsize'], ctype=args['ctype'])
+
+    coord = to_coord(lonlat=[args['lon'], args['lat']], coordframe=args['coordframe'])
     for key in ['fits', 'png', 'votable']:
         if args[key]:
             if key is 'votable':
-                results = cut_those_maps.cut(key, lonlat=[args['lon'], args['lat']], coordframe=args['coordframe'], apertures=args['votable'])
+                results = cut_those_maps.cut(key, coord=coord, apertures=args['votable'])
             else:
-                results = cut_those_maps.cut(key, lonlat=[args['lon'], args['lat']], coordframe=args['coordframe'])
+                results = cut_those_maps.cut(key, coord=coord)
 
     if not os.path.isdir(args['outdir']):
         os.makedirs(args['outdir'])

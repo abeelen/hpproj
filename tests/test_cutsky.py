@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from hpproj import CutSky, cutsky, main, to_new_maps
+from hpproj import CutSky, cutsky, main, to_new_maps, to_coord
 from hpproj import DEFAULT_NPIX, DEFAULT_PIXSIZE, DEFAULT_CTYPE
 from hpproj import hp_is_nest, hp_celestial
 
@@ -93,6 +93,11 @@ def test_CutSky_init(generate_hpmap):
     npt.assert_array_equal(my_cutsky.maps[0][1], hp_map_data)
     assert my_cutsky.maps[0][2]['doContour'] is True
 
+    old_maps = {'tmpfile': {'filename': filename,
+                            'doContour': True}}
+    my_cutsky = CutSky(maps=old_maps, low_mem=True)
+    assert my_cutsky.maps[0][0] == filename
+
 
 def test_CutSky_cut_fits(generate_hpmap):
 
@@ -100,20 +105,11 @@ def test_CutSky_cut_fits(generate_hpmap):
     filename, opt = hp_map[0]
 
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result = my_cutsky.cut_fits([0, 0])
+
+    result = my_cutsky.cut_fits(to_coord([0, 0]))
     assert len(result) == 1
     assert result[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
-
-
-def test_CutSky_cut_fits_assert(generate_hpmap):
-
-    hp_map, hp_map_data, hp_key = generate_hpmap
-    filename, opt = hp_map[0]
-
-    my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    with pytest.raises(AssertionError):
-        result = my_cutsky.cut_fits([0, 0, 0])
 
 
 def test_CutSky_cut_fits_selection(generate_hpmap):
@@ -128,18 +124,18 @@ def test_CutSky_cut_fits_selection(generate_hpmap):
 
     hp_maps = [hp_map[0], (filename2, opt2)]
     my_cutsky = CutSky(maps=hp_maps, low_mem=True)
-    result = my_cutsky.cut_fits([0, 0])
+    result = my_cutsky.cut_fits(to_coord([0, 0]))
     assert len(result) == 2
 
-    result = my_cutsky.cut_fits([0, 0], maps_selection=['tmpfile2'])
+    result = my_cutsky.cut_fits(to_coord([0, 0]), maps_selection=['tmpfile2'])
     assert len(result) == 1
     assert result[0]['legend'] == 'tmpfile2'
 
-    result = my_cutsky.cut_fits([0, 0], maps_selection=[filename2])
+    result = my_cutsky.cut_fits(to_coord([0, 0]), maps_selection=[filename2])
     assert len(result) == 1
     assert result[0]['legend'] == 'tmpfile2'
 
-    result = my_cutsky.cut_png([0, 0], maps_selection=[filename2])
+    result = my_cutsky.cut_png(to_coord([0, 0]), maps_selection=[filename2])
     assert len(result) == 1
     assert result[0]['legend'] == 'tmpfile2'
 
@@ -152,19 +148,22 @@ def test_CutSky_cut_png(generate_hpmap):
     # Will actually not produce a contour in this situation
 
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result = my_cutsky.cut_png([0, 0])
+    result = my_cutsky.cut_png(to_coord([0, 0]))
     assert len(result) == 1
     assert result[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
     assert result[0]['fits'].header['doContour'] is True
-    # CHECK png .... ?
+    # TODO: CHECK png .... ?
 
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result2 = my_cutsky.cut_fits([0, 0])
-    result2 = my_cutsky.cut_png([0, 0])
+    result2 = my_cutsky.cut_fits(to_coord([0, 0]))
+    result2 = my_cutsky.cut_png(to_coord([0, 0]))
     assert result[0]['legend'] == result2[0]['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, result2[0]['fits'].data.data)
     assert result[0]['png'] == result2[0]['png']
+
+    result2 = my_cutsky.cut_fits(to_coord([0, 0], 'fk5'))
+    # TODO: SHOULD CHECK png results
 
 
 def test_CutSky_cut_phot(generate_hpmap):
@@ -175,11 +174,11 @@ def test_CutSky_cut_phot(generate_hpmap):
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
 
     # insure assertion when no aperture is given
-    result = my_cutsky.cut_phot([0, 0], apertures=None)
+    result = my_cutsky.cut_phot(to_coord([0, 0]), apertures=None)
     assert result[0]['phot'] is None
 
     # aperture is a float
-    result = my_cutsky.cut_phot([0, 0], apertures=1)
+    result = my_cutsky.cut_phot(to_coord([0, 0]), apertures=1)
     assert len(result) == 1
     assert result[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, np.ones((my_cutsky.npix, my_cutsky.npix)))
@@ -194,8 +193,8 @@ def test_CutSky_cut_phot(generate_hpmap):
 
     # aperture is a list
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result2 = my_cutsky.cut_fits([0, 0])
-    result2 = my_cutsky.cut_phot([0, 0], apertures=[1, 2])
+    result2 = my_cutsky.cut_fits(to_coord([0, 0]))
+    result2 = my_cutsky.cut_phot(to_coord([0, 0]), apertures=[1, 2])
     assert result2[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, result2[0]['fits'].data.data)
     npt.assert_almost_equal(result2[0]['phot'][0][3], np.pi)
@@ -204,7 +203,7 @@ def test_CutSky_cut_phot(generate_hpmap):
     # aperture is given in hp_map
     hp_map[0][1]['apertures'] = 1
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result3 = my_cutsky.cut_phot([0, 0], apertures=None)
+    result3 = my_cutsky.cut_phot(to_coord([0, 0]), apertures=None)
     assert result3[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, result3[0]['fits'].data.data)
     assert result3[0]['phot'][0][3] == result[0]['phot'][0][3]
@@ -212,7 +211,7 @@ def test_CutSky_cut_phot(generate_hpmap):
     # aperture is given in hp_map as a list
     hp_map[0][1]['apertures'] = [1, 2]
     my_cutsky = CutSky(maps=hp_map, low_mem=True)
-    result3 = my_cutsky.cut_phot([0, 0], apertures=None)
+    result3 = my_cutsky.cut_phot(to_coord([0, 0]), apertures=None)
     assert result3[0]['legend'] == opt['legend']
     npt.assert_array_equal(result[0]['fits'].data.data, result3[0]['fits'].data.data)
     npt.assert_almost_equal(result3[0]['phot'][0][3], np.pi)

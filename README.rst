@@ -9,14 +9,20 @@ HealPixProjection is a project to allow easy and efficient projection of healpix
 
     $ cutsky 0.0 0.0 --mapfilenames HFI_SkyMap_857_2048_R2.00_full.fits
 
-or as a python module
+or as a python function
 
 .. code:: python
 
     from hpproj import cutsky
-    result = cutsky([0.0, 0.0], maps={'Planck 857':
-                                      {'filename': 'HFI_SkyMap_857_2048_R2.00_full.fits'}
-                                      } )
+    result = cutsky([0.0, 0.0], maps={'Planck 857': {'filename': 'HFI_SkyMap_857_2048_R2.00_full.fits'}} )
+
+or as a python class, for optimization when producting several cuts
+
+.. code:: python
+
+    from hpproj import CutSky, to_coord
+    cutsky = CutSky({'Planck 857': {'filename': 'HFI_SkyMap_857_2048_R2.00_full.fits'}})
+    result = cutsky.cut_fits(to_coord([0., 0.])
 
 .. note::
 
