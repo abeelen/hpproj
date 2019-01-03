@@ -27,6 +27,7 @@ VALID_GALACTIC = ['galactic', 'g']
 VALID_EQUATORIAL = ['celestial2000', 'equatorial', 'eq', 'c', 'q', 'fk4', 'fk5', 'icrs']
 
 logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
+LOGGER = logging.getLogger('hpproj')
 
 __all__ = ['build_wcs', 'build_wcs_cube', 'build_wcs_2pts',
            'build_ctype', 'equiv_celestial', 'rot_frame',

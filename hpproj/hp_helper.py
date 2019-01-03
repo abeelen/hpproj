@@ -27,7 +27,7 @@ from .wcs_helper import DEFAULT_SHAPE_OUT
 
 from .decorator import _hpmap
 
-logging.basicConfig(format='%(asctime)s -- %(levelname)s: %(message)s', level=logging.DEBUG)
+LOGGER = logging.getLogger('hpproj')
 
 __all__ = ['hp_is_nest', 'hp_celestial', 'hp_to_wcs', 'hp_to_wcs_ipx',
            'hp_project', 'gen_hpmap', 'build_hpmap', 'hpmap_key',
@@ -116,7 +116,7 @@ def rotate_frame(alon, alat, hp_header, wcs):
     frame_out = wcs_utils.wcs_to_celestial_frame(wcs)
 
     if not frame_in.is_equivalent_frame(frame_out):
-        logging.debug('... converting coordinate system')
+        LOGGER.debug('... converting coordinate system')
         coords = frame_out.realize_frame(
             UnitSphericalRepresentation(alon * u.deg, alat * u.deg)).transform_to(frame_in)
         alon = coords.data.lon.deg

@@ -1,6 +1,16 @@
 master
 ======
 
+Added
+-----
+* `_cut_wcs` method to `CutSky`
+* `CutSky` now use SkyCoord internally
+
+Fixed
+-----
+* Updated test matrix, added py3.7, special care of py3.5
+* Fixed tests failing for photutils 0.6 new API
+
 Version 0.9.0
 =============
 

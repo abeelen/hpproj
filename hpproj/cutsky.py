@@ -50,7 +50,7 @@ try:  # pragma: py3
 except NameError:  # pragma: py2
     FileNotFoundError = IOError
 
-LOGGER = logging.getLogger('django')
+LOGGER = logging.getLogger('cutsky')
 
 DEFAULT_PATCH = [256, 1.]
 
@@ -158,6 +158,61 @@ class CutSky(object):
         self.cuts = None
         self.coord = None
 
+    def _cut_wcs(self, wcs):
+        """Efficiently cut the healpix maps and return cutted fits file with proper header
+
+        Parameters
+        ----------
+        wcs: :class:`~astropy.wcs.WCS`
+            the wcs for the patches
+
+        Returns
+        -------
+        tuple (lists of masked arrays, list of cards)
+            the corresponding data and header cards
+
+        Notes
+        -----
+        This is a low level routine, not intended to be used directly
+        """
+
+        patches = []
+        headers = []
+
+        for group, maps in groupby(self.maps, key=hpmap_key):
+            LOGGER.debug('projecting ' + group)
+
+            # Construct a basic healpix header from the group key, this
+            # will be commun for all the maps in this group
+            nside, ordering, coordsys = group.split('_')
+            hp_header = {'NSIDE': int(nside),
+                         'ORDERING': ordering,
+                         'COORDSYS': coordsys}
+
+            # Extract mask & pixels, common for all healpix maps of this
+            # group
+            mask, ipix = hp_to_wcs_ipx(hp_header, wcs, shape_out=(self.npix, self.npix))
+
+            # Set up the figure, common for all healpix maps of this group
+            LOGGER.debug('cutting maps')
+
+            # Now the actual healpix map reading and projection
+            for filename, i_hdu in self._to_process(gen_hpmap(maps)):
+                legend = i_hdu.header['legend']
+                patch = np.ma.array(np.zeros((self.npix, self.npix)), mask=~mask, fill_value=np.nan)
+                patch[mask] = i_hdu.data[ipix]
+                header = fits.Header()
+                header.append(('filename', filename))
+                header.append(('legend', legend))
+                for extra_key in ['doContour', 'apertures']:
+                    if extra_key in i_hdu.header:
+                        header.append((extra_key, i_hdu.header[extra_key]))
+
+                patches.append(patch)
+                headers.append(header)
+
+        return patches, headers
+
     def cut_fits(self, coord, maps_selection=None):
         """Efficiently cut the healpix maps and return cutted fits file with proper header
 
@@ -173,7 +228,7 @@ class CutSky(object):
         -------
         list of dictionnaries
             the dictionnary has 2 keys :
-            * 'legend' (the opts{'legend'} see __init())
+            * 'legend' (the opts{'legend'} see __init__())
             * 'fits' an :class:`~astropy.io.fits.ImageHDU`
         """
 
@@ -184,39 +239,12 @@ class CutSky(object):
                         shape_out=(self.npix, self.npix),
                         proj_sys=coord.frame.name, proj_type=self.ctype)
 
+        patches, headers = self._cut_wcs(wcs)
         cuts = []
-        for group, maps in groupby(self.maps, key=hpmap_key):
-            LOGGER.info('projecting ' + group)
+        for patch, header in zip(patches, headers):
+            cuts.append({'legend': header['legend'],
+                         'fits': fits.ImageHDU(patch, wcs.to_header() + header)})
 
-            # Construct a basic healpix header from the group key, this
-            # will be commun for all the maps in this group
-            nside, ordering, coordsys = group.split('_')
-            hp_header = {'NSIDE': int(nside),
-                         'ORDERING': ordering,
-                         'COORDSYS': coordsys}
-
-            # Extract mask & pixels, common for all healpix maps of this
-            # group
-            mask, ipix = hp_to_wcs_ipx(hp_header, wcs, shape_out=(self.npix, self.npix))
-
-            # Set up the figure, common for all healpix maps of this group
-            LOGGER.info('cutting maps')
-
-            # Now the actual healpix map reading and projection
-            for filename, i_hdu in self._to_process(gen_hpmap(maps)):
-                legend = i_hdu.header['legend']
-                patch = np.ma.array(
-                    np.zeros((self.npix, self.npix)), mask=~mask, fill_value=np.nan)
-                patch[mask] = i_hdu.data[ipix]
-                header = wcs.to_header()
-                header.append(('filename', filename))
-                header.append(('legend', legend))
-                for extra_key in ['doContour', 'apertures']:
-                    if extra_key in i_hdu.header:
-                        header.append((extra_key, i_hdu.header[extra_key]))
-
-                cuts.append({'legend': legend,
-                             'fits': fits.ImageHDU(patch, header)})
         self.coord = coord
         self.cuts = cuts
 
