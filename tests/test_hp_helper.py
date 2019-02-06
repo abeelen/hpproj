@@ -30,42 +30,42 @@ from astropy import units as u
 class TestHPCelestical:
 
     @pytest.mark.parametrize("hp_header", [{},
-                                           {'COORDSYS': 'ecliptic'},
-                                           {'COORDSYS': 'ECLIPTIC'},
-                                           {'COORDSYS': 'e'},
-                                           {'COORDSYS': 'E'}, ])
+                                           {'coordsys': 'ecliptic'},
+                                           {'coordsys': 'ECLIPTIC'},
+                                           {'coordsys': 'e'},
+                                           {'coordsys': 'E'}, ])
     def test_hp_celestial_exception(self, hp_header):
         with pytest.raises(ValueError):
-            frame = hp_celestial(hp_header)
+            frame = hp_celestial(fits.Header(hp_header))
 
     @pytest.mark.parametrize("hp_header,result",
-                             [({'COORDSYS': 'G'}, Galactic()),
-                              ({'COORDSYS': 'Galactic'}, Galactic()),
-                              ({'COORDSYS': 'Equatorial'}, ICRS()),
-                              ({'COORDSYS': 'EQ'}, ICRS()),
-                              ({'COORDSYS': 'celestial2000'}, ICRS()),
+                             [({'coordsys': 'G'}, Galactic()),
+                              ({'coordsys': 'Galactic'}, Galactic()),
+                              ({'coordsys': 'Equatorial'}, ICRS()),
+                              ({'coordsys': 'EQ'}, ICRS()),
+                              ({'coordsys': 'celestial2000'}, ICRS()),
                               ])
     def test_hp_celestial(self, hp_header, result):
-        frame = hp_celestial(hp_header)
+        frame = hp_celestial(fits.Header(hp_header))
         assert frame.is_equivalent_frame(result)
 
 
 class TestHPNest:
 
     def test_hp_is_nest_exception(self):
-        hp_headers = [{}, {'ORDERING': 'Unknown'}]
+        hp_headers = [{}, {'ordering': 'Unknown'}]
 
         for hp_header in hp_headers:
             with pytest.raises(ValueError):
-                is_nest = hp_is_nest(hp_header)
+                is_nest = hp_is_nest(fits.Header(hp_header))
 
     @pytest.mark.parametrize("hp_header, result",
-                             [({'ORDERING': 'nested'}, True),
-                              ({'ORDERING': 'NESTED'}, True),
-                              ({'ORDERING': 'ring'}, False),
+                             [({'ordering': 'nested'}, True),
+                              ({'ordering': 'NESTED'}, True),
+                              ({'ordering': 'ring'}, False),
                               ])
     def test_hp_is_nest(self, hp_header, result):
-        is_nest = hp_is_nest(hp_header)
+        is_nest = hp_is_nest(fits.Header(hp_header))
         assert is_nest == result
 
 
@@ -73,9 +73,9 @@ class TestHPNest:
 def uniform_hp_hdu():
     nside = 2**6
     hp_map = np.ones(hp.nside2npix(nside), dtype=np.float)
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
+    hp_header = {'nside': nside,
+                 'ordering': 'RING',
+                 'coordsys': 'C'}
 
     return fits.ImageHDU(hp_map, fits.Header(hp_header))
 
@@ -90,9 +90,9 @@ def gaussian_hp_hdu():
     sigma = 5 * np.degrees(hp.nside2resol(nside))
 
     hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'C'}
+    hp_header = fits.Header({'nside': nside,
+                             'ordering': 'RING',
+                             'coordsys': 'C'})
 
     i_pix = hp.query_disc(nside, hp.dir2vec(coord.ra.deg, coord.dec.deg, lonlat=True), 20 * sigma, nest=False)
     lon_arr, lat_arr = hp.pix2ang(nside, i_pix, lonlat=True, nest=False)
@@ -111,9 +111,9 @@ def gaussians_hp_hdu():
     sigma = 3 * np.degrees(hp.nside2resol(nside))
 
     hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
-    hp_header = {'NSIDE': nside,
-                 'ORDERING': 'RING',
-                 'COORDSYS': 'G',
+    hp_header = {'nside': nside,
+                 'ordering': 'RING',
+                 'coordsys': 'G',
                  'UNIT': 'MJy/deg**2'}
 
     i_pix = np.random.uniform(0, hp.nside2npix(nside), n_gaussian).astype(int)
@@ -134,7 +134,7 @@ def test_hp_stack_single(gaussians_hp_hdu):
 
     sigma, coords, hp_hdu = gaussians_hp_hdu
     shape_out = (129, 129)
-    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['nside'])) / 3
     hdu = hp_stack(hp_hdu, coords[0], pixsize=pixsize, shape_out=shape_out)
 
     assert isinstance(hdu, fits.ImageHDU)
@@ -148,7 +148,7 @@ def test_hp_stack_keep(gaussians_hp_hdu):
 
     sigma, coords, hp_hdu = gaussians_hp_hdu
     shape_out = (129, 129)
-    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['nside'])) / 3
     hdu = hp_stack(hp_hdu, coords, pixsize=pixsize, shape_out=shape_out, keep=True)
 
     assert isinstance(hdu, fits.ImageHDU)
@@ -162,7 +162,7 @@ def test_hp_stack_pixsize(gaussians_hp_hdu):
 
     sigma, coords, hp_hdu = gaussians_hp_hdu
     shape_out = (129, 129)
-    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['nside'])) / 3
     pixsize = [pixsize] * coords.shape[0]
     hdu = hp_stack(hp_hdu, coords, pixsize=pixsize, shape_out=shape_out, keep=True)
 
@@ -179,7 +179,7 @@ def test_hp_stack(gaussians_hp_hdu):
 
     sigma, coords, hp_hdu = gaussians_hp_hdu
     shape_out = (129, 129)
-    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) / 3
+    pixsize = np.degrees(hp.nside2resol(hp_hdu.header['nside'])) / 3
     hdu = hp_stack(hp_hdu, coords, pixsize=pixsize, shape_out=shape_out)
 
     assert isinstance(hdu, fits.ImageHDU)
@@ -273,7 +273,7 @@ def test_hp_profile_uniform(uniform_hp_hdu):
 def test_hp_profile_gaussian(gaussian_hp_hdu):
 
     sigma, coord, hp_hdu = gaussian_hp_hdu
-    pixsize, shape_out = np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])), 20
+    pixsize, shape_out = np.degrees(hp.nside2resol(hp_hdu.header['nside'])), 20
 
     wcs = build_wcs_profile(pixsize)
 
@@ -306,7 +306,7 @@ def test_hp_to_wcs(uniform_hp_hdu):
     # npix=None, order=0):
     hp_hdu = uniform_hp_hdu
 
-    nside = hp_hdu.header['NSIDE']
+    nside = hp_hdu.header['nside']
     coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), [512, 512]
     wcs = build_wcs(coord, pixsize, shape_out)
 
@@ -346,7 +346,7 @@ def test_hp_to_wcs_ipx(uniform_hp_hdu):
 
     hp_hdu = uniform_hp_hdu
     hp_header = hp_hdu.header
-    nside = hp_header['NSIDE']
+    nside = hp_header['nside']
 
     coord, pixsize, shape_out = SkyCoord(0, 0, unit='deg'), 0.1, [1, 1]
     wcs = build_wcs(coord, pixsize, shape_out)
@@ -371,7 +371,7 @@ def test_hp_to_wcs_ipx(uniform_hp_hdu):
 def test_hp_project(uniform_hp_hdu):
     hp_hdu = uniform_hp_hdu
 
-    coord, pixsize, npix = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])), 512
+    coord, pixsize, npix = SkyCoord(0, 0, unit='deg'), np.degrees(hp.nside2resol(hp_hdu.header['nside'])), 512
 
     # Test HDU
     sub_map = hp_project(hp_hdu, coord, pixsize, (npix, npix))
@@ -382,7 +382,7 @@ def test_hp_project(uniform_hp_hdu):
 def test_hpmap_decorator(uniform_hp_hdu):
     hp_hdu = uniform_hp_hdu
     hp_header = hp_hdu.header
-    nside = hp_header['NSIDE']
+    nside = hp_header['nside']
 
     coord, pixsize, npix = SkyCoord(
         0, 0, unit='deg'), np.degrees(hp.nside2resol(nside)), 512
@@ -396,7 +396,7 @@ def test_hpmap_decorator(uniform_hp_hdu):
 def test_gen_hpmap(uniform_hp_hdu):
 
     hp_hdu = uniform_hp_hdu
-    hp_map = np.ones(hp.nside2npix(hp_hdu.header['NSIDE']))
+    hp_map = np.ones(hp.nside2npix(hp_hdu.header['nside']))
     maps = [('map' + str(i), hp_map * i, hp_hdu.header) for i in range(3)]
 
     for i, (name, hp_hdu) in enumerate(gen_hpmap(maps)):
@@ -406,9 +406,9 @@ def test_gen_hpmap(uniform_hp_hdu):
 
 def test_hpmap_key():
 
-    hp_map = ('dummy', 'dummy', {'NSIDE': 32,
-                                 'ORDERING': 'RING',
-                                 'COORDSYS': 'C'})
+    hp_map = ('dummy', 'dummy', fits.Header({'nside': 32,
+                                             'ordering': 'RING',
+                                             'coordsys': 'C'}))
     key = hpmap_key(hp_map)
 
     assert isinstance(key, str)
@@ -418,20 +418,20 @@ def test_hpmap_key():
 
 #     nside = 2**6
 
-#     hp_headers = [{'NSIDE': nside,
-#                     'ORDERING': 'RING',
-#                     'COORDSYS': 'C'},
-#                    {'NSIDE': nside,
-#                     'ORDERING': 'NEST',
-#                     'COORDSYS': 'C'},
-#                    {'NSIDE': nside/2,
-#                     'ORDERING': 'RING',
-#                     'COORDSYS': 'C'},
-#                    {'NSIDE': nside,
-#                     'ORDERING': 'RING',
-#                     'COORDSYS': 'G'} ]
+#     hp_headers = [{'nside': nside,
+#                     'ordering': 'RING',
+#                     'coordsys': 'C'},
+#                    {'nside': nside,
+#                     'ordering': 'NEST',
+#                     'coordsys': 'C'},
+#                    {'nside': nside/2,
+#                     'ordering': 'RING',
+#                     'coordsys': 'C'},
+#                    {'nside': nside,
+#                     'ordering': 'RING',
+#                     'coordsys': 'G'} ]
 
-# hp_keys = ["%s_%s_%s"%(hp_header['NSIDE'], hp_header['ORDERING'],
+# hp_keys = ["%s_%s_%s"%(hp_header['nside'], hp_header['ordering'],
 # hp_celestial(hp_header).name) for hp_header in hp_headers]
 
 #     maps = [('dummy_'+str(i),'dummy_'+str(i),hp_header) for i,hp_header in enumerate(hp_headers) ]
@@ -458,7 +458,7 @@ def test_hp_to_aperture(gaussian_hp_hdu):
     assert aper.shape == npix.shape
 
     # Check for total area
-    pix_surf = (np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) * u.degree)**2
+    pix_surf = (np.degrees(hp.nside2resol(hp_hdu.header['nside'])) * u.degree)**2
     area = aper * pix_surf
     npt.assert_allclose(area.value, 2 * np.pi * sigma**2, rtol=3e-3)
 
@@ -485,7 +485,7 @@ def test_hp_photometry(gaussians_hp_hdu):
     apertures = Angle(sigma, "deg") * [6, 15, 18]
     result = hp_photometry(hp_hdu, coords, apertures)
 
-    pix_surf = (np.degrees(hp.nside2resol(hp_hdu.header['NSIDE'])) * u.degree)**2
+    pix_surf = (np.degrees(hp.nside2resol(hp_hdu.header['nside'])) * u.degree)**2
     area = result['brigthness'] * result['n_pix'] * pix_surf
 
     # High tolerance as some of the sources are "blended"

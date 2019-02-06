@@ -100,12 +100,12 @@ class CutSky(object):
         The list of dictionnary describe the maps to be projected :
         ```
         [(full_filename_to_healpix_map.fits, {'legend': legend,
-                                              'doContour': True}), # optionnal
+                                              'docontour': True}), # optionnal
           ... ]
         ```
         The {opt} dictionnary MUST contain, at least, the key
         'legend' which will be used to uniquely identify the cutted
-        map, other possible keys 'doContour' with a boolean value to
+        map, other possible keys 'docontour' with a boolean value to
         contour the map latter one, 'COORDSYS' and/or 'ORDERING' to correct/update
         the healpix map header, or 'apertures' to give a list or apertures
         for the photometry. Any other options is serialized into the output
@@ -114,7 +114,7 @@ class CutSky(object):
         Alternatively one can use the old interface as a dictionnary :
         ```
         {legend: {'filename': full_filename_to_healpix_map.fits,
-                    'doContour': True }, # optionnal
+                    'docontour': True }, # optionnal
          ... }
         ```
         """
@@ -136,13 +136,13 @@ class CutSky(object):
         hp_map = build_hpmap(filenames, low_mem=low_mem)
         # TODO: Check if it would be preferable to store these options as class attributes...
         for (filename, i_map, i_header), opt in zip(hp_map, opts):
-            # Insure that we do have a doContour key internally
-            if 'doContour' not in opt.keys():
-                opt['doContour'] = False
+            # Insure that we do have a docontour key internally
+            if 'docontour' not in opt.keys():
+                opt['docontour'] = False
 
             # Serialize list and strings in the dictionnary
             for key, value in opt.items():
-                if key in ['doContour', 'legend', 'COORDSYS', 'ORDERING']:  # Reserved words
+                if key in ['docontour', 'legend', 'coordsys', 'ordering']:  # Reserved words
                     i_header[key] = value
                 elif isinstance(value, (str, list)):
                     i_header[key] = json.dumps(value)
@@ -204,7 +204,7 @@ class CutSky(object):
                 header = fits.Header()
                 header.append(('filename', filename))
                 header.append(('legend', legend))
-                for extra_key in ['doContour', 'apertures']:
+                for extra_key in ['docontour', 'apertures']:
                     if extra_key in i_hdu.header:
                         header.append((extra_key, i_hdu.header[extra_key]))
 
@@ -349,7 +349,7 @@ class CutSky(object):
 
             # Insure we do have increasing values even when patch.std == 0
             levels = np.arange(2, 10) * (np.max([patch.std(), 1e-12]))
-            if patch_header['doContour']:
+            if patch_header['docontour']:
                 LOGGER.debug('contouring ' + legend)
                 ax_wcs.contour(
                     patch, levels=levels, colors="white", interpolation='bicubic')
@@ -484,7 +484,7 @@ def to_new_maps(maps):
         a dictionnary with key being the legend of the image :
         ```
         {legend: {'filename': full_filename_to_healpix_map.fits,
-                    'doContour': True },
+                    'docontour': True },
          ... }
         ```
 
@@ -493,7 +493,7 @@ def to_new_maps(maps):
     a list of tuple following the new convention:
     ```
     [(full_filename_to_healpix_map.fits, {'legend': legend,
-                                          'doContour': True}),
+                                          'docontour': True}),
      ... ]
     ```
     """
@@ -504,8 +504,8 @@ def to_new_maps(maps):
     for key in iter(maps.keys()):
         filename = maps[key]['filename']
         opt = {'legend': key}
-        if 'doContour' in maps[key]:
-            opt['doContour'] = maps[key]['doContour']
+        if 'docontour' in maps[key]:
+            opt['docontour'] = maps[key]['docontour']
         new_maps.append((filename, opt))
 
     return new_maps
@@ -523,13 +523,13 @@ def cutsky(lonlat=None, maps=None, patch=None, coordframe=DEFAULT_COORDFRAME, ct
         interface) :
         ```
         {legend: {'filename': full_filename_to_healpix_map.fits,
-                  'doContour': True }, # optionnal
+                  'docontour': True }, # optionnal
          ... }
          ```
          or
          ```
          [(full_filename_to_healpix_map.fits, {'legend': legend,
-                                              'doContour': True}), # optionnal
+                                              'docontour': True}), # optionnal
          ... ]
          ```
     patch : array of [int, float]

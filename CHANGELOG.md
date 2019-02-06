@@ -1,6 +1,15 @@
 master
 ======
 
+Added
+-----
+* any header attribute can be changed in the config file
+
+Fixed
+-----
+* `doContour` and `doCut` option changed to lowercase
+
+
 Version 0.9.1
 ==============
 

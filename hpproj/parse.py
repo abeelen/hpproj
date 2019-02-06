@@ -30,12 +30,15 @@ try:  # pragma: py3
 except NameError:  # pragma: py2
     FileNotFoundError = IOError
 
-LOGGER = logging.getLogger('django')
+LOGGER = logging.getLogger('hpproj')
 
 DEFAULT_NPIX = 256
 DEFAULT_PIXSIZE = 1
 DEFAULT_COORDFRAME = 'galactic'
 DEFAULT_CTYPE = 'TAN'
+
+SPECIAL_OPT = {'docontour': {'function': ConfigParser.getboolean, 'default': False}}
+
 
 __all__ = ['parse_args', 'parse_config', 'combine_args_config', 'ini_main']
 
@@ -98,10 +101,10 @@ def parse_args(args):
     parsed_args = parser.parse_args(args)
 
     # Put the list of filenames into the same structure as the config
-    # file, we are loosing the doContour keyword but...
+    # file, we are loosing the docontour keyword but...
     if parsed_args.mapfilenames:
         parsed_args.maps = [(filename,
-                             dict([('legend', os.path.splitext(os.path.basename(filename))[0]), ('doContour', False)]))
+                             dict([('legend', os.path.splitext(os.path.basename(filename))[0]), ('docontour', False)]))
                             for filename in
                             parsed_args.mapfilenames]
     else:
@@ -213,10 +216,20 @@ def parse_config_map_opt(config, section):
 
     opt = {'legend': section}
 
-    if config.has_option(section, 'doContour'):
-        opt['doContour'] = config.getboolean(section, 'doContour')
-    else:
-        opt['doContour'] = False
+    for key in config.options(section):
+        if key in ['filename', 'docut']:
+            # parsed elsewhere
+            pass
+        elif key not in SPECIAL_OPT:
+            opt[key.lower()] = config.get(section, key)
+
+    for key in SPECIAL_OPT:
+        if config.has_option(section, key):
+            get_function = SPECIAL_OPT[key]['function']
+            opt[key] = get_function(config,
+                                    section, key)
+        else:
+            opt[key] = SPECIAL_OPT[key]['default']
 
     return opt
 
@@ -226,7 +239,7 @@ def parse_config_select_maps(config, sections):
 
     good_sections = []
     for key in sections:
-        if not config.has_option(key, 'doCut') or config.getboolean(key, 'doCut'):
+        if not config.has_option(key, 'docut') or config.getboolean(key, 'docut'):
             good_sections.append(key)
 
     return good_sections

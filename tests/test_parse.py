@@ -25,7 +25,7 @@ try:  # pragma: py3
 except NameError:  # pragma: py2
     FileNotFoundError = IOError
 
-logger = logging.getLogger('django')
+logger = logging.getLogger('hpproj')
 
 
 class TestParseArgs:
@@ -58,8 +58,8 @@ class TestParseArgs:
         args = parse.parse_args('0.0 0.0 --mapfilenames blah1 blah2'.split())
 
         assert args.mapfilenames == ['blah1', 'blah2']
-        assert args.maps == [('blah1', {'legend': 'blah1', 'doContour': False}),
-                             ('blah2', {'legend': 'blah2', 'doContour': False})]
+        assert args.maps == [('blah1', {'legend': 'blah1', 'docontour': False}),
+                             ('blah2', {'legend': 'blah2', 'docontour': False})]
 
     @pytest.mark.parametrize("verbosity, level",
                              [('', None),
@@ -112,27 +112,29 @@ class TestParserConfig:
         # 'map 1' should be present
         config.add_section('map 1')
         config.set('map 1', 'filename', 'filename1.fits')
-        config.set('map 1', 'doCut', str(True))
-        config.set('map 1', 'doContour', str(True))
+        config.set('map 1', 'docut', str(True))
+        config.set('map 1', 'docontour', str(True))
 
         # 'map 2' should not be present
         config.add_section('map 2')
         config.set('map 2', 'filename', 'filename2.fits')
-        config.set('map 2', 'doCut', str(False))
+        config.set('map 2', 'docut', str(False))
 
         # 'map 3' should not be present
         config.add_section('map 3')
         config.set('map 3', 'filename', 'filename3.fits')
+        config.set('map 3', 'COORDSYS', 'C')
 
         config.write(conffile.open(mode='w', ensure=True))
         test_config = parse.parse_config(str(conffile))
 
         assert test_config.get('maps') == [('filename1.fits',
                                             {'legend': 'map 1',
-                                             'doContour': True}),
+                                             'docontour': True}),
                                            ('filename3.fits',
                                             {'legend': 'map 3',
-                                             'doContour': False})]
+                                             'docontour': False,
+                                             'coordsys': 'C', })]
 
     def test_parser_config_maps_interpolation(self, generate_default_conffile):
         conffile, config = generate_default_conffile
@@ -144,7 +146,7 @@ class TestParserConfig:
         config.write(conffile.open(mode='w', ensure=True))
         test_config = parse.parse_config(str(conffile))
 
-        assert test_config.get('maps')[2] == ('toto/filename4.fits', {'legend': 'map 4', 'doContour': False})
+        assert test_config.get('maps')[2] == ('toto/filename4.fits', {'legend': 'map 4', 'docontour': False})
 
     @pytest.mark.parametrize("verbosity, level",
                              [('verbose', logging.DEBUG),
