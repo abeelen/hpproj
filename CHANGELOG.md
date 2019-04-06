@@ -1,6 +1,11 @@
 master
 ======
 
+Added
+=====
+
+* `Cutsky` and `build_hpmap` can handle a tuple (np.array, fits.Header) as input instead of filename
+
 Version 0.9.2
 =============
 

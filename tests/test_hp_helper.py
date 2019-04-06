@@ -9,7 +9,7 @@ import pytest
 
 from hpproj import hp_celestial, hp_is_nest
 from hpproj import hp_to_wcs, hp_to_wcs_ipx
-from hpproj import hp_project, gen_hpmap, hpmap_key
+from hpproj import hp_project, gen_hpmap, hpmap_key, build_hpmap
 from hpproj import hp_to_profile, hp_profile
 from hpproj import hp_to_aperture, hp_photometry
 from hpproj import wcs_to_profile
@@ -402,6 +402,31 @@ def test_gen_hpmap(uniform_hp_hdu):
     for i, (name, hp_hdu) in enumerate(gen_hpmap(maps)):
         assert name == 'map' + str(i)
         npt.assert_array_equal(hp_hdu.data, i)
+
+
+def test_build_hpmap(tmpdir_factory, uniform_hp_hdu):
+
+    hp_map, hp_header = uniform_hp_hdu.data, uniform_hp_hdu.header
+    tmpfile = tmpdir_factory.mktemp("data").join("tmpfile.fits")
+    hp_header.pop('coordsys')
+    hp.write_map(str(tmpfile), hp_map, nest=hp_is_nest(hp_header))
+
+    filename = str(tmpfile)
+
+    hp_maps = build_hpmap([filename])
+    assert isinstance(hp_maps[0][0], str)
+    assert hp_maps[0][0] == filename
+    assert hp_maps[0][1] == filename
+    assert isinstance(hp_maps[0][2], fits.Header)
+
+    hp_maps = build_hpmap([filename], low_mem=False)
+    assert np.all(hp_maps[0][1] == hp_map)
+
+
+    hp_maps = build_hpmap([(hp_map, hp_header)])
+    assert hp_maps[0][0] == "dummy"
+    assert np.all(hp_maps[0][1] == hp_map)
+
 
 
 def test_hpmap_key():

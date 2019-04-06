@@ -565,7 +565,7 @@ def build_hpmap(filenames, low_mem=True):
     Parameters
     ----------
     filenames: list
-        A list of Nmap filenames of healpix maps
+        A list of Nmap filenames of healpix maps or a tuple with (hp_map, hp_header)
     low_mem : bool
         On low memory system, do not read the maps themselves (default: only header)
 
@@ -576,12 +576,16 @@ def build_hpmap(filenames, low_mem=True):
 
     hp_maps = []
     for filename in filenames:
-        hp_header = fits.getheader(filename, 1)
-        if low_mem is True:
-            hp_map = filename
-        else:
-            hp_map = hp.read_map(filename, verbose=False, nest=None)
-            hp_map = hp.ma(hp_map)
+        if isinstance(filename, str):
+            hp_header = fits.getheader(filename, 1)
+            if low_mem is True:
+                hp_map = filename
+            else:
+                hp_map = hp.read_map(filename, verbose=False, nest=None)
+                hp_map = hp.ma(hp_map)
+        elif isinstance(filename, tuple):
+            hp_map, hp_header = filename
+            filename = "dummy"
         hp_maps.append((filename, hp_map, hp_header))
     return hp_maps
 
