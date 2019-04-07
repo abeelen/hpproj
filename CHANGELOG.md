@@ -1,6 +1,10 @@
 master
 ======
 
+Fixed
+-----
+* logger are not configured in the module 
+
 Version 0.9.3
 =============
 
