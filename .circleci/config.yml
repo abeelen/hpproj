@@ -33,7 +33,7 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
-            pip install pytest coveralls pytest-cov flake8 pytest-mpl scipy
+            pip install pytest pytest-runner coveralls pytest-cov flake8 pytest-mpl scipy
 
       - save_cache:
           paths:
