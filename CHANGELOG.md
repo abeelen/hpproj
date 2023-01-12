@@ -2,6 +2,21 @@ master
 ======
 
 
+Added
+-----
+
+Fixed
+-----
+
+
+Version 0.9.4
+=============
+
+Fixed
+-----
+* Updated compatibility with numpy and matplotlib
+
+
 Version 0.9.3
 =============
 
