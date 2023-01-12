@@ -32,8 +32,8 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 
-from photutils import CircularAperture
-from photutils import aperture_photometry
+from photutils.aperture import CircularAperture
+from photutils.aperture import aperture_photometry
 
 from .wcs_helper import VALID_EQUATORIAL
 from .wcs_helper import equiv_celestial, build_wcs
@@ -360,8 +360,9 @@ class CutSky(object):
 
             # Add the map to the cut dictionnary
             output_map = BytesIO()
+            ax_wcs.set(frame_on=False)
             plt.savefig(output_map, bbox_inches='tight',
-                        format='png', dpi=75, frameon=False)
+                        format='png', dpi=75)
             cut['png'] = b64encode(output_map.getvalue()).strip()
             LOGGER.debug(legend + ' done')
 
@@ -612,7 +613,7 @@ def main(argv=None):
     coord = to_coord(lonlat=[args['lon'], args['lat']], coordframe=args['coordframe'])
     for key in ['fits', 'png', 'votable']:
         if args[key]:
-            if key is 'votable':
+            if key == 'votable':
                 results = cut_those_maps.cut(key, coord=coord, apertures=args['votable'])
             else:
                 results = cut_those_maps.cut(key, coord=coord)

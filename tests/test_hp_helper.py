@@ -72,7 +72,7 @@ class TestHPNest:
 @pytest.fixture(scope='session')
 def uniform_hp_hdu():
     nside = 2**6
-    hp_map = np.ones(hp.nside2npix(nside), dtype=np.float)
+    hp_map = np.ones(hp.nside2npix(nside), dtype=float)
     hp_header = {'nside': nside,
                  'ordering': 'RING',
                  'coordsys': 'C'}
@@ -89,7 +89,7 @@ def gaussian_hp_hdu():
     coord = SkyCoord(lon, lat, unit="deg")
     sigma = 5 * np.degrees(hp.nside2resol(nside))
 
-    hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
+    hp_map = np.zeros(hp.nside2npix(nside), dtype=float)
     hp_header = fits.Header({'nside': nside,
                              'ordering': 'RING',
                              'coordsys': 'C'})
@@ -110,7 +110,7 @@ def gaussians_hp_hdu():
     n_gaussian = 10
     sigma = 3 * np.degrees(hp.nside2resol(nside))
 
-    hp_map = np.zeros(hp.nside2npix(nside), dtype=np.float)
+    hp_map = np.zeros(hp.nside2npix(nside), dtype=float)
     hp_header = {'nside': nside,
                  'ordering': 'RING',
                  'coordsys': 'G',
@@ -195,7 +195,7 @@ def test_hp_stack(gaussians_hp_hdu):
         denom = 2 * sigma**2
         return amplitude * np.exp(- ((x - x_mean)**2 + (y - y_mean)**2) / denom)
 
-    y, x = np.indices(hdu.shape, dtype=np.float)
+    y, x = np.indices(hdu.shape, dtype=float)
     model = CircularGaussian2D(x, y, amplitude=1, x_mean=(hdu.shape[1] - 1) / 2, y_mean=(hdu.shape[0] - 1) / 2, sigma=sigma_pix)
 
     # Due to strong pixelization....
@@ -219,7 +219,7 @@ def test_wcs_to_profile():
 
     npix = 65
     sigma = 4
-    y_arr, x_arr = np.indices((npix, npix), dtype=np.float)
+    y_arr, x_arr = np.indices((npix, npix), dtype=float)
     data = np.exp(- (x_arr - (npix - 1) / 2.)**2 / (2 * sigma**2) - (y_arr - (npix - 1) / 2.)**2 / (2 * sigma**2))
     wcs = build_wcs(0, 0, src_frame='EQUATORIAL', pixsize=1, shape_out=(npix, npix))
     hdu = fits.ImageHDU(data, wcs.to_header())

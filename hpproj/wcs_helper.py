@@ -222,7 +222,7 @@ def build_wcs(coord, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj_sys='EQUATO
     wcs = WCS(naxis=2)
 
     # CRPIX IS in Fortran convention
-    wcs.wcs.crpix = (np.array(shape_out, dtype=np.float) + 1) / 2
+    wcs.wcs.crpix = (np.array(shape_out, dtype=float) + 1) / 2
     wcs.wcs.cdelt = np.array([-pixsize, pixsize])
     wcs.wcs.crval = [coord.data.lon.deg, coord.data.lat.deg]
 
@@ -263,7 +263,7 @@ def build_wcs_cube(coord, index, pixsize=0.01, shape_out=DEFAULT_SHAPE_OUT, proj
         raise ValueError('Unvupported projection')
 
     wcs = WCS(naxis=3)
-    wcs.wcs.crpix = np.append((np.array(shape_out, dtype=np.float) + 1) / 2, 1)
+    wcs.wcs.crpix = np.append((np.array(shape_out, dtype=float) + 1) / 2, 1)
     wcs.wcs.cdelt = np.append(np.array([-pixsize, pixsize]), 1)
     wcs.wcs.crval = np.array([coord.data.lon.deg, coord.data.lat.deg, index])
 
@@ -357,8 +357,8 @@ def build_wcs_2pts(coords, pixsize=None, shape_out=DEFAULT_SHAPE_OUT, proj_sys='
     pixsize, relative_pos = relative_pixsize(coords, pixsize, shape_out, relative_pos)
 
     # Put the first source on the relative_pos[0]
-    wcs.wcs.crpix = np.array([relative_pos[0], 1. / 2], dtype=np.float) * (
-        np.array(shape_out, dtype=np.float)[::-1])
+    wcs.wcs.crpix = np.array([relative_pos[0], 1. / 2], dtype=float) * (
+        np.array(shape_out, dtype=float)[::-1])
     wcs.wcs.crval = [coords[0].data.lon.deg, coords[0].data.lat.deg]
 
     wcs.wcs.cdelt = np.array([-pixsize, pixsize])
